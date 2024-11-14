@@ -19,3 +19,26 @@ rule remove_short_contigs:
         # Filter contigs for phispy input (5000bp filter)
         cat {output.contigs_filt} | seqkit seq -m 5000 > {output.contigs_5000bp}
         """
+
+
+rule separate_unbinned:
+    input: 
+        os.path.join(config["outdir"], "{sample}", "assembly","final_filtered_contigs.fasta")
+    threads: 8
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "assembly", "{sample}_separate"))
+    shell:
+        """
+        mkdir -p {output}
+
+        cat {input} | awk '
+        {{
+            if (substr($0, 1, 1) == ">") {{ 
+                filename = (substr($0, 2) ".fa") 
+            }}
+            print $0 >> filename
+            close(filename)
+        }}'
+
+        mv NODE* {output}
+        """
