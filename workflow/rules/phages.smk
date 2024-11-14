@@ -6,7 +6,7 @@ rule genomad_db:
 
 rule genomad:
     input:
-        contigs_filt = os.path.join(config["outdir"], "{sample}", "assembly", "final_filtered_contigs.fasta")
+        contigs_filt = os.path.join(config["outdir"], "{sample}", "assembly", "final_filtered_contigs.fasta,
         db = config["genomad_database"]
     threads: 24
     conda: "../envs/genomad_env.yaml"
