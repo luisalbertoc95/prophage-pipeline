@@ -26,7 +26,7 @@ rule separate_unbinned:
         os.path.join(config["outdir"], "{sample}", "assembly","final_filtered_contigs.fasta")
     threads: 8
     output:
-        directory(os.path.join(config["outdir"], "{sample}", "assembly", "{sample}_separate"))
+        directory(os.path.join(config["outdir"], "{sample}", "separated_assembly", "{sample}_separate"))
     shell:
         """
         mkdir -p {output}
