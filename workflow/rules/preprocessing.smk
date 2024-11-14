@@ -14,7 +14,13 @@ rule fastp:
     benchmark:
         os.path.join(config["outdir"], "benchmarks", "fastp", "{sample}_bmrk.txt")
     shell:
-        "fastp -l {params.l} -i {input.r1} -I {input.r2} -o {output.tr1} -O {output.tr2} 2> {log}"
+        """
+        fastp -l {params.l} \
+        -i {input.r1} -I {input.r2} \
+        -o {output.tr1} -O {output.tr2} \
+        --trim_poly_g --trim_poly_x \
+        2> {log}
+        """
 
 # Get database for host removal step
 rule get_db:
