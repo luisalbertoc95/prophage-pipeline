@@ -7,7 +7,7 @@ rule remove_short_contigs:
     conda: "../envs/minimap_env.yaml"
     output:
         contigs_filt = os.path.join(config["outdir"], "{sample}", "assembly", "final_filtered_contigs.fasta"),
-        contigs_5000bp = os.path.join(config["outdir"], "{sample}", "binning", "final_filt_contigs_5000.fasta")
+        contigs_5000bp = os.path.join(config["outdir"], "{sample}", "assembly", "final_filt_contigs_5000.fasta")
     log:
         os.path.join(config["outdir"], "logs", "binning_prep", "{sample}.log")
     benchmark:
