@@ -1,12 +1,12 @@
 rule rename_contigs:
     input:
-        os.path.join(config["outdir"], "{sample}", "assembly", "{sample}_separate")
+        os.path.join(config["outdir"], "{sample}", "separated_assembly", "{sample}_separate")
     output:
         directory(os.path.join(config["outdir"], "all_bins", "{sample}"))
     shell:
         """
         mkdir -p {output}
-        files={config[outdir]}/{wildcards.sample}/assembly/{wildcards.sample}_separate/*
+        files={config[outdir]}/{wildcards.sample}/separated_assembly/{wildcards.sample}_separate/*
 
         for file in $files
         do
