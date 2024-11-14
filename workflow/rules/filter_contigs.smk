@@ -14,7 +14,7 @@ rule remove_short_contigs:
         os.path.join(config["outdir"], "benchmarks", "binning_prep", "{sample}_bmrk.txt")
     shell:
         """
-        cat {input.contigs} | seqkit seq -m 4000 > {output.contigs_filt}
+        cat {input.contigs} | seqkit seq -m 1000 > {output.contigs_filt}
 
         # Filter contigs for phispy input (5000bp filter)
         cat {output.contigs_filt} | seqkit seq -m 5000 > {output.contigs_5000bp}
