@@ -1,12 +1,12 @@
 rule rename_contigs:
     input:
-        os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins")
+        os.path.join(config["outdir"], "{sample}", "assembly", "{sample}_separate")
     output:
         directory(os.path.join(config["outdir"], "all_bins", "{sample}"))
     shell:
         """
         mkdir -p {output}
-        files={config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/*
+        files={config[outdir]}/{wildcards.sample}/assembly/{wildcards.sample}_separate/*
 
         for file in $files
         do
