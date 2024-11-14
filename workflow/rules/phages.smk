@@ -6,7 +6,7 @@ rule genomad_db:
 
 rule genomad:
     input:
-        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
+        contigs_filt = os.path.join(config["outdir"], "{sample}", "assembly", "final_filtered_contigs.fasta")
         db = config["genomad_database"]
     threads: 24
     conda: "../envs/genomad_env.yaml"
@@ -34,7 +34,7 @@ rule download_bakta_db:
 
 rule bakta:
     input:
-        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filt_contigs_5000.fasta"),
+        contigs = os.path.join(config["outdir"], "{sample}", "assembly", "final_filt_contigs_5000.fasta"),
         db = config["bakta_database"]
     threads: 24
     conda: "../envs/bakta_env.yaml"
