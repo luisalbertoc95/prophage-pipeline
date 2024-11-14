@@ -8,8 +8,7 @@ SAMPLES, = glob_wildcards(os.path.join(config["reads"],config["fastq_names_1"]))
 
 include: "rules/preprocessing.smk"
 include: "rules/assembly.smk"
-include: "rules/binning.smk"
-include: "rules/refine_bins.smk"
+include: "rules/filter_contigs.smk"
 include: "rules/coverm.smk"
 include: "rules/taxonomy.smk"
 include: "rules/phages.smk"
