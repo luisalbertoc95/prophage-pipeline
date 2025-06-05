@@ -9,6 +9,7 @@ default-resources:
   - runtime=1440
   - cores=24
   - slurm_account=sahlab
+  - slurm_extra="--job-name={rule}_{wildcards.sample}"
 
 jobs: 40
 latency-wait: 60 
