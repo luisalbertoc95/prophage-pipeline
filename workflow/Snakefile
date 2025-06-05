@@ -18,3 +18,9 @@ rule all:
     input:
         expand(os.path.join(config["outdir"], "phage_analysis", "{sample}", "done"), sample = SAMPLES)
     default_target: True
+
+rule all_with_summary:
+    input:
+        expand(os.path.join(config["outdir"], "phage_analysis", "{sample}", "done"), sample = SAMPLES),
+        os.path.join(config["outdir"], "prophage_summary_report.html")
+    default_target: False
