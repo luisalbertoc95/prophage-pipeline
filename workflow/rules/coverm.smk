@@ -1,12 +1,12 @@
 rule rename_contigs:
     input:
-        os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins")
+        os.path.join(config["outdir"], "binning", "{sample}", "dastool", "{sample}.bins")
     output:
         directory(os.path.join(config["outdir"], "all_bins", "{sample}"))
     shell:
         """
         mkdir -p {output}
-        files={config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/*
+        files={config[outdir]}/binning/{wildcards.sample}/dastool/{wildcards.sample}_DASTool_bins/*
 
         for file in $files
         do
@@ -38,7 +38,7 @@ rule coverm_cluster:
     input:
         os.path.join(config["outdir"], "all_bins", "all_samples")
     threads: 24
-    conda: "../envs/coverm_env.yaml"
+    conda: config["conda_envs"]["coverm"]
     output:
         directory(os.path.join(config["outdir"], "all_bins_clustered"))
     log:
@@ -58,13 +58,13 @@ rule coverm_cluster:
 
 rule coverm_mapping:
     input:
-        hr1 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_1_hr.fastq.gz"),
-        hr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_hr.fastq.gz"),
+        hr1 = os.path.join(config["outdir"], "preprocessing", "{sample}", "{sample}_1_hr.fastq.gz"),
+        hr2 = os.path.join(config["outdir"], "preprocessing", "{sample}", "{sample}_2_hr.fastq.gz"),
         contigs = os.path.join(config["outdir"], "all_bins_clustered")
     threads: 24
-    conda: "../envs/coverm_env.yaml"
+    conda: config["conda_envs"]["coverm"]
     output:
-        directory(os.path.join(config["outdir"], "{sample}", "coverm"))
+        directory(os.path.join(config["outdir"], "coverm", "{sample}"))
     log:
         os.path.join(config["outdir"], "logs", "coverm", "{sample}.log")
     benchmark:
