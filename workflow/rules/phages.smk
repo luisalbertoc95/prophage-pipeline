@@ -103,12 +103,13 @@ rule checkv_db:
 
 rule checkv:
     input:
-        fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
+        fasta = os.path.join(config["outdir"], "phage_analysis", "{sample}", "final_prophage.fasta"),
         db = config["checkv_database"]
     threads: 24
     conda: config["conda_envs"]["checkv"]
     output:
-        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv"))
+        checkv_dir = directory(os.path.join(config["outdir"], "phage_analysis", "{sample}", "checkv")),
+        quality_summary = os.path.join(config["outdir"], "phage_analysis", "{sample}", "checkv", "quality_summary.tsv")
     log:
         os.path.join(config["outdir"], "logs", "checkv", "{sample}.log")
     benchmark:
@@ -116,18 +117,22 @@ rule checkv:
     shell:
         """
         checkv end_to_end \
-        {input.fasta} {output} \
+        {input.fasta} {output.checkv_dir} \
         -t {threads} \
         -d {input.db}
         """
 
 rule run_everything:
     input:
-        coverm = os.path.join(config["outdir"], "coverm", "{sample}"),
-        checkm = os.path.join(config["outdir"], "binning", "{sample}", "checkm"),
-        checkv = os.path.join(config["outdir"], "phage_analysis", "{sample}", "checkv"),
-        prophage = os.path.join(config["outdir"], "phage_analysis", "{sample}", "final_prophage.fasta")
+        # Final prophage outputs
+        prophage_fasta = os.path.join(config["outdir"], "phage_analysis", "{sample}", "final_prophage.fasta"),
+        prophage_table = os.path.join(config["outdir"], "phage_analysis", "{sample}", "final_prophage_table_with_host_taxonomy.tsv"),
+        # Quality assessment
+        checkv_summary = os.path.join(config["outdir"], "phage_analysis", "{sample}", "checkv", "quality_summary.tsv"),
+        checkm_table = os.path.join(config["outdir"], "binning", "{sample}", "checkm", "checkm_out.tsv"),
+        # Coverage analysis
+        coverm_stats = os.path.join(config["outdir"], "coverm", "{sample}", "{sample}_stats.txt")
     output:
         os.path.join(config["outdir"], "phage_analysis", "{sample}", "done")
     shell:
-        "touch {config[outdir]}/phage_analysis/{wildcards.sample}/done"
+        "touch {output}"
