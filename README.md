@@ -25,7 +25,7 @@ snakemake --profile ../profile/slurm/ --config [options]
 snakemake all_with_summary --profile ../profile/slurm/ --config [options]
 
 # Run only the summary generation (after pipeline completion)
-snakemake all_summaries --profile ../profile/slurm/ --config [options]
+snakemake create_comprehensive_summary --profile ../profile/slurm/ --config [options]
 
 # Dry run to see planned jobs
 snakemake -n --profile ../profile/slurm/ --config reads=/path/to/reads outdir=/path/to/output
@@ -66,6 +66,15 @@ snakemake --profile ../profile/slurm/ --config reads=/scratch/sahlab/Megan/test_
 - Paired-end reads belonging to the same pair must have identical names in the r1 and r2 fastq files
 - The pipeline uses centralized conda environment management for reproducibility
 - Conda environments are stored persistently at: `/ref/sahlab/software/miniforge3/envs/smk_envs_prophage_pipeline`
+- SLURM job names will appear as generic identifiers due to Snakemake v8 limitations
+
+## Recent Improvements (restructure-directories branch)
+
+- **Process-first directory structure**: Results organized by analysis type rather than sample
+- **Centralized conda management**: All environment paths managed in config.yaml
+- **Comprehensive data warehouse**: Flexible summary tables for custom downstream analysis
+- **Automatic summary generation**: Data tables and basic plots created automatically
+- **Streamlined codebase**: Removed redundant scripts and dependencies
 
 ## Output Directory Structure
 
