@@ -1,10 +1,9 @@
 # slurm resource configuration
-executor: slurm
-#executor: cluster-generic
-#cluster-generic-submit-cmd: "sbatch"
-
-# Job naming pattern
-jobname: "{rule}_{wildcards}.{jobid}"
+executor: cluster-generic
+cluster-generic-submit-cmd: "{workflow.basedir}/../profile/slurm/slurm-submit.py"
+cluster-generic-status-cmd: "{workflow.basedir}/../profile/slurm/slurm-status.py {jobid}"
+cluster-generic-cancel-cmd: "scancel {jobid}"
+cluster-generic-sidecar-cmd: ""
 
 # Resources to use if not otherwise specified    
 default-resources:
