@@ -3,13 +3,15 @@ executor: slurm
 #executor: cluster-generic
 #cluster-generic-submit-cmd: "sbatch"
 
+# Job naming pattern
+jobname: "{rule}_{wildcards}"
+
 # Resources to use if not otherwise specified    
 default-resources:
   - mem_mb=16000
   - runtime=1440
   - cores=24
   - slurm_account=sahlab
-  - slurm_extra="--job-name={rule}_{wildcards.sample}"
 
 jobs: 40
 latency-wait: 60 
