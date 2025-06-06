@@ -131,14 +131,34 @@ create_summary_stats <- function(prophage_data, checkv_data, checkm_data, covera
     count(tool, name = "prophages_detected") %>%
     mutate(percentage = round(prophages_detected / sum(prophages_detected) * 100, 1))
   
-  # Taxonomy summary
+  # Taxonomy summary at multiple levels
+  taxonomy_summary <- list()
+  
+  # Define taxonomic levels to summarize
+  tax_levels <- c("phylum", "class", "order", "family", "genus")
+  
+  for (level in tax_levels) {
+    if (level %in% colnames(prophage_data)) {
+      taxonomy_summary[[level]] <- prophage_data %>%
+        filter(!is.na(.data[[level]])) %>%
+        count(.data[[level]], sort = TRUE, name = "count") %>%
+        rename(!!level := 1) %>%
+        slice_head(n = 15) %>%
+        mutate(
+          percentage = round(count / sum(prophage_data %>% filter(!is.na(.data[[level]])) %>% nrow()) * 100, 1),
+          level = level
+        )
+    }
+  }
+  
+  # Keep the original phylum summary for backward compatibility
   if ("phylum" %in% colnames(prophage_data)) {
-    taxonomy_summary <- prophage_data %>%
+    taxonomy_summary_phylum <- prophage_data %>%
       filter(!is.na(phylum)) %>%
       count(phylum, sort = TRUE) %>%
       slice_head(n = 10)
   } else {
-    taxonomy_summary <- tibble(phylum = character(), n = integer())
+    taxonomy_summary_phylum <- tibble(phylum = character(), n = integer())
   }
   
   # CheckV quality summary
@@ -153,7 +173,8 @@ create_summary_stats <- function(prophage_data, checkv_data, checkm_data, covera
   return(list(
     prophage_summary = prophage_summary,
     tool_summary = tool_summary,
-    taxonomy_summary = taxonomy_summary,
+    taxonomy_summary = taxonomy_summary_phylum,  # For plots
+    taxonomy_summary_all = taxonomy_summary,      # All levels
     quality_summary = quality_summary
   ))
 }
@@ -334,8 +355,27 @@ main <- function(outdir) {
   # Save data summaries as TSV
   write_tsv(summary_stats$prophage_summary, file.path(outdir, "prophage_summary_by_sample.tsv"))
   write_tsv(summary_stats$tool_summary, file.path(outdir, "tool_detection_summary.tsv"))
+  
+  # Save original phylum summary for backward compatibility
   if (nrow(summary_stats$taxonomy_summary) > 0) {
     write_tsv(summary_stats$taxonomy_summary, file.path(outdir, "host_taxonomy_summary.tsv"))
+  }
+  
+  # Save all taxonomic levels in a single file
+  if (length(summary_stats$taxonomy_summary_all) > 0) {
+    # Combine all levels into one dataframe
+    all_taxonomy <- bind_rows(summary_stats$taxonomy_summary_all)
+    write_tsv(all_taxonomy, file.path(outdir, "host_taxonomy_all_levels.tsv"))
+    
+    # Also save each level separately for convenience
+    for (level_name in names(summary_stats$taxonomy_summary_all)) {
+      if (nrow(summary_stats$taxonomy_summary_all[[level_name]]) > 0) {
+        write_tsv(
+          summary_stats$taxonomy_summary_all[[level_name]], 
+          file.path(outdir, paste0("host_taxonomy_", level_name, ".tsv"))
+        )
+      }
+    }
   }
   
   message("Summary analysis completed!")
