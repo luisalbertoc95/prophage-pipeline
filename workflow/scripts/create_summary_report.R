@@ -162,23 +162,28 @@ create_summary_stats <- function(prophage_data, checkv_data, checkm_data, covera
 create_visualizations <- function(prophage_data, checkv_data, summary_stats) {
   plots <- list()
   
+  # Set a clean theme with white background
+  theme_set(theme_bw(base_size = 12))
+  
   # 1. Prophages per sample
   plots$prophages_per_sample <- ggplot(summary_stats$prophage_summary, aes(x = reorder(sample, total_prophages), y = total_prophages)) +
-    geom_col(fill = "steelblue", alpha = 0.7) +
+    geom_col(fill = "steelblue", alpha = 0.8) +
     coord_flip() +
     labs(title = "Total Prophages Detected per Sample",
          x = "Sample", y = "Number of Prophages") +
-    theme_minimal()
+    theme_bw() +
+    theme(panel.grid.minor = element_blank())
   
   # 2. Tool comparison
   plots$tool_comparison <- ggplot(summary_stats$tool_summary, aes(x = tool, y = prophages_detected, fill = tool)) +
-    geom_col(alpha = 0.7) +
+    geom_col(alpha = 0.8) +
     geom_text(aes(label = paste0(prophages_detected, "\n(", percentage, "%)")), 
               vjust = -0.5) +
+    scale_fill_brewer(palette = "Set2") +
     labs(title = "Prophage Detection by Tool",
          x = "Detection Tool", y = "Number of Prophages") +
-    theme_minimal() +
-    theme(legend.position = "none")
+    theme_bw() +
+    theme(legend.position = "none", panel.grid.minor = element_blank())
   
   # 3. Tool comparison by sample (stacked)
   tool_by_sample <- prophage_data %>%
@@ -186,42 +191,49 @@ create_visualizations <- function(prophage_data, checkv_data, summary_stats) {
     summarise(count = n(), .groups = "drop")
   
   plots$tool_by_sample <- ggplot(tool_by_sample, aes(x = sample, y = count, fill = tool)) +
-    geom_col(position = "stack", alpha = 0.7) +
+    geom_col(position = "stack", alpha = 0.8) +
+    scale_fill_brewer(palette = "Set2") +
     labs(title = "Prophage Detection Tools by Sample",
          x = "Sample", y = "Number of Prophages", fill = "Tool") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          panel.grid.minor = element_blank())
   
   # 4. Host taxonomy distribution (top 10)
   if (nrow(summary_stats$taxonomy_summary) > 0) {
     plots$taxonomy_distribution <- ggplot(summary_stats$taxonomy_summary, aes(x = reorder(phylum, n), y = n)) +
-      geom_col(fill = "forestgreen", alpha = 0.7) +
+      geom_col(fill = "forestgreen", alpha = 0.8) +
       coord_flip() +
       labs(title = "Top 10 Host Phyla for Prophages",
            x = "Phylum", y = "Number of Prophages") +
-      theme_minimal()
+      theme_bw() +
+      theme(panel.grid.minor = element_blank())
   }
   
   # 5. CheckV quality distribution
   if (nrow(summary_stats$quality_summary) > 0) {
     plots$quality_distribution <- ggplot(summary_stats$quality_summary, aes(x = checkv_quality, y = count, fill = checkv_quality)) +
-      geom_col(alpha = 0.7) +
+      geom_col(alpha = 0.8) +
       geom_text(aes(label = paste0(count, "\n(", percentage, "%)")), 
                 vjust = -0.5) +
+      scale_fill_brewer(palette = "RdYlBu", direction = -1) +
       labs(title = "Prophage Quality Distribution (CheckV)",
            x = "Quality Category", y = "Number of Prophages") +
-      theme_minimal() +
-      theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1))
+      theme_bw() +
+      theme(legend.position = "none", 
+            axis.text.x = element_text(angle = 45, hjust = 1),
+            panel.grid.minor = element_blank())
   }
   
   # 6. Prophage length distribution
   if ("provirus_length" %in% colnames(checkv_data)) {
     plots$length_distribution <- ggplot(checkv_data, aes(x = provirus_length)) +
-      geom_histogram(bins = 30, fill = "orange", alpha = 0.7) +
+      geom_histogram(bins = 30, fill = "darkorange", alpha = 0.8, color = "black") +
       labs(title = "Prophage Length Distribution",
            x = "Prophage Length (bp)", y = "Count") +
-      theme_minimal() +
-      scale_x_log10()
+      theme_bw() +
+      theme(panel.grid.minor = element_blank()) +
+      scale_x_log10(labels = scales::comma)
   }
   
   return(plots)
