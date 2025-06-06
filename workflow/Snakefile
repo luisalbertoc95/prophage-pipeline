@@ -13,6 +13,7 @@ include: "rules/refine_bins.smk"
 include: "rules/coverm.smk"
 include: "rules/taxonomy.smk"
 include: "rules/phages.smk"
+include: "rules/summary.smk"
 
 rule all:
     input:
