@@ -1,9 +1,5 @@
 # slurm resource configuration
-executor: cluster-generic
-cluster-generic-submit-cmd: "python {workflow.basedir}/../profile/slurm/slurm-submit.py"
-cluster-generic-status-cmd: "python {workflow.basedir}/../profile/slurm/slurm-status.py {jobid}"
-cluster-generic-cancel-cmd: "scancel {jobid}"
-cluster-generic-sidecar-cmd: ""
+executor: slurm
 
 # Resources to use if not otherwise specified    
 default-resources:
