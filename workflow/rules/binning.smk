@@ -7,8 +7,8 @@ rule binning_prep:
     conda: config["conda_envs"]["minimap"]
     output:
         contigs_filt = os.path.join(config["outdir"], "assembly", "{sample}", "contigs_filt_1000bp.fasta"),
-        sam = os.path.join(config["outdir"], "binning", "{sample}", "map_reads", "{sample}.sam"),
-        bam = os.path.join(config["outdir"], "binning", "{sample}", "map_reads", "{sample}.bam"),
+        sam = temp(os.path.join(config["outdir"], "binning", "{sample}", "map_reads", "{sample}.sam")),
+        bam = temp(os.path.join(config["outdir"], "binning", "{sample}", "map_reads", "{sample}.bam")),
         sorted_bam = os.path.join(config["outdir"], "binning", "{sample}", "map_reads", "sorted_bam", "{sample}_sorted.bam")
     log:
         os.path.join(config["outdir"], "logs", "binning_prep", "{sample}.log")
@@ -29,6 +29,9 @@ rule binning_prep:
         samtools sort -O bam -o {output.sorted_bam} {output.bam} 2>> {log}
 
         samtools index {output.sorted_bam} 2>> {log}
+        
+        # Clean up bowtie2 index files to save space
+        rm -f {config[outdir]}/binning/{wildcards.sample}/map_reads/btdb.*
         """
 
 rule concoct:
@@ -38,9 +41,9 @@ rule concoct:
     threads: 24
     conda: config["conda_envs"]["concoct"]
     output:
-        bed = os.path.join(config["outdir"], "binning", "{sample}", "concoct.out", "contigs_10k.bed"),
-        fa = os.path.join(config["outdir"], "binning", "{sample}", "concoct.out", "contigs_10k.fasta"),
-        cov_table = os.path.join(config["outdir"], "binning", "{sample}", "concoct.out", "coverage_table.tsv"),
+        bed = temp(os.path.join(config["outdir"], "binning", "{sample}", "concoct.out", "contigs_10k.bed")),
+        fa = temp(os.path.join(config["outdir"], "binning", "{sample}", "concoct.out", "contigs_10k.fasta")),
+        cov_table = temp(os.path.join(config["outdir"], "binning", "{sample}", "concoct.out", "coverage_table.tsv")),
         merged_csv = os.path.join(config["outdir"], "binning", "{sample}", "concoct.out", "results", "clustering_merged.csv")
     log:
         os.path.join(config["outdir"], "logs", "concoct", "{sample}.log")

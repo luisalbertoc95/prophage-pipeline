@@ -31,13 +31,13 @@ summary_results/
 │   ├── master_prophage_catalog.tsv
 │   ├── host_prophage_relationships.tsv
 │   ├── sample_level_summary.tsv
-│   ├── tool_performance_overall.tsv
+│   ├── tool_detection_overall.tsv
 │   ├── tool_overlap_analysis.tsv
-│   └── tool_performance_by_sample.tsv
+│   └── tool_detection_by_sample.tsv
 ├── plots/                      # Basic visualizations (PNG)
 │   ├── prophages_per_sample.png
-│   ├── tool_performance_by_sample.png
-│   ├── overall_tool_comparison.png
+│   ├── tool_detection_by_sample.png
+│   ├── overall_tool_detection_comparison.png
 │   ├── length_distribution.png
 │   └── host_phyla_distribution.png
 └── per_sample_summaries/       # Individual sample TSV files
@@ -101,16 +101,16 @@ summary_results/
 - Quality control assessment
 - Diversity analysis
 
-### 4. Tool Performance Tables
+### 4. Tool Detection Comparison Tables
 
-**`tool_performance_overall.tsv`**: Overall detection statistics
+**`tool_detection_overall.tsv`**: Overall detection statistics
 **`tool_overlap_analysis.tsv`**: Agreement between tools
-**`tool_performance_by_sample.tsv`**: Per-sample tool breakdown
+**`tool_detection_by_sample.tsv`**: Per-sample tool breakdown
 
 **Use Cases**:
-- Method benchmarking
+- Detection method comparison
 - Understanding tool complementarity
-- Quality assessment
+- Detection completeness assessment
 
 ## Analysis Examples
 
@@ -170,7 +170,7 @@ prophage_host_range <- prophages %>%
   )
 ```
 
-#### 4. Tool Comparison
+#### 4. Tool Detection Comparison
 ```r
 # Tool agreement
 tool_comparison <- prophages %>%
@@ -219,7 +219,7 @@ ggplot(sample_stats, aes(x = reorder(sample_id, unique_phyla), y = unique_phyla)
 ### Quality Assessment
 - **Detection saturation**: Are samples fully explored or would deeper sequencing reveal more?
 - **Assembly quality impact**: How does contig quality affect prophage detection?
-- **Tool benchmarking**: Systematic comparison of detection methods
+- **Method comparison**: Systematic comparison of detection approaches
 
 ## Integration with External Tools
 

@@ -142,11 +142,11 @@ create_sample_summary <- function(master_catalog, checkv_data) {
   return(sample_summary)
 }
 
-# Function to create tool performance comparison
+# Function to create tool detection comparison
 create_tool_comparison <- function(master_catalog) {
-  message("Creating tool performance comparison...")
+  message("Creating tool detection comparison...")
   
-  # Overall tool performance
+  # Overall tool detection statistics
   tool_summary <- master_catalog %>%
     count(tool, name = "total_detections") %>%
     mutate(percentage = round(total_detections / sum(total_detections) * 100, 1))
@@ -162,7 +162,7 @@ create_tool_comparison <- function(master_catalog) {
     count(tools_detected, name = "contig_count") %>%
     mutate(percentage = round(contig_count / sum(contig_count) * 100, 1))
   
-  # Per-sample tool performance
+  # Per-sample tool detection counts
   tool_by_sample <- master_catalog %>%
     group_by(sample_id, tool) %>%
     summarise(detections = n(), .groups = "drop") %>%
@@ -191,7 +191,7 @@ create_basic_visualizations <- function(master_catalog, sample_summary, tool_com
   
   ggsave(file.path(plots_dir, "prophages_per_sample.png"), p1, width = 10, height = 6, dpi = 300)
   
-  # 2. Tool performance by sample (stacked bar)
+  # 2. Tool detection comparison by sample (stacked bar)
   tool_data <- master_catalog %>%
     count(sample_id, tool) %>%
     complete(sample_id, tool, fill = list(n = 0))
@@ -199,20 +199,20 @@ create_basic_visualizations <- function(master_catalog, sample_summary, tool_com
   p2 <- ggplot(tool_data, aes(x = sample_id, y = n, fill = tool)) +
     geom_col(position = "stack", alpha = 0.8) +
     scale_fill_brewer(palette = "Set2") +
-    labs(title = "Tool Performance by Sample", x = "Sample", y = "Number of Prophages", fill = "Tool") +
+    labs(title = "Tool Detection Comparison by Sample", x = "Sample", y = "Number of Prophages", fill = "Tool") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.grid.minor = element_blank())
   
-  ggsave(file.path(plots_dir, "tool_performance_by_sample.png"), p2, width = 12, height = 6, dpi = 300)
+  ggsave(file.path(plots_dir, "tool_detection_by_sample.png"), p2, width = 12, height = 6, dpi = 300)
   
-  # 3. Overall tool comparison
+  # 3. Overall tool detection comparison
   p3 <- ggplot(tool_comparison$overall, aes(x = tool, y = total_detections, fill = tool)) +
     geom_col(alpha = 0.8) +
     geom_text(aes(label = paste0(total_detections, "\n(", percentage, "%)")), vjust = -0.5) +
     scale_fill_brewer(palette = "Set2") +
-    labs(title = "Overall Tool Performance", x = "Detection Tool", y = "Total Detections") +
+    labs(title = "Overall Tool Detection Comparison", x = "Detection Tool", y = "Total Detections") +
     theme(legend.position = "none", panel.grid.minor = element_blank())
   
-  ggsave(file.path(plots_dir, "overall_tool_comparison.png"), p3, width = 8, height = 6, dpi = 300)
+  ggsave(file.path(plots_dir, "overall_tool_detection_comparison.png"), p3, width = 8, height = 6, dpi = 300)
   
   # 4. Prophage length distribution
   p4 <- ggplot(master_catalog, aes(x = length)) +
@@ -287,9 +287,9 @@ main <- function(outdir) {
   write_tsv(master_catalog, file.path(tables_dir, "master_prophage_catalog.tsv"))
   write_tsv(host_prophage_table, file.path(tables_dir, "host_prophage_relationships.tsv"))
   write_tsv(sample_summary, file.path(tables_dir, "sample_level_summary.tsv"))
-  write_tsv(tool_comparison$overall, file.path(tables_dir, "tool_performance_overall.tsv"))
+  write_tsv(tool_comparison$overall, file.path(tables_dir, "tool_detection_overall.tsv"))
   write_tsv(tool_comparison$overlap, file.path(tables_dir, "tool_overlap_analysis.tsv"))
-  write_tsv(tool_comparison$by_sample, file.path(tables_dir, "tool_performance_by_sample.tsv"))
+  write_tsv(tool_comparison$by_sample, file.path(tables_dir, "tool_detection_by_sample.tsv"))
   
   # Create visualizations
   create_basic_visualizations(master_catalog, sample_summary, tool_comparison, plots_dir)
@@ -321,7 +321,7 @@ This report summarizes the results of prophage detection across all samples in y
 
 ', kable(sample_summary, format = "markdown"), '
 
-## Tool Performance
+## Tool Detection Comparison
 
 ', kable(tool_comparison$overall, format = "markdown"), '
 
@@ -332,12 +332,12 @@ This report summarizes the results of prophage detection across all samples in y
 - **`master_prophage_catalog.tsv`** - Complete catalog of all prophages detected across all samples
 - **`host_prophage_relationships.tsv`** - Host taxonomy information for each prophage
 - **`sample_level_summary.tsv`** - Per-sample summary statistics
-- **`tool_performance_*.tsv`** - Tool performance and overlap analyses
+- **`tool_detection_*.tsv`** - Tool detection statistics and overlap analyses
 
 ### Visualizations (`plots/` directory)
 - `prophages_per_sample.png` - Sample comparison chart
-- `tool_performance_by_sample.png` - Tool performance by sample
-- `overall_tool_comparison.png` - Overall tool comparison
+- `tool_detection_by_sample.png` - Tool detection comparison by sample
+- `overall_tool_detection_comparison.png` - Overall tool detection comparison
 - `length_distribution.png` - Prophage length distribution
 - `host_phyla_distribution.png` - Host taxonomy overview
 
@@ -382,11 +382,11 @@ sample_stats <- prophages %>% group_by(sample_id) %>% summarise(n = n(), mean_le
   message("  - master_prophage_catalog.tsv")
   message("  - host_prophage_relationships.tsv") 
   message("  - sample_level_summary.tsv")
-  message("  - tool_performance_*.tsv")
+  message("  - tool_detection_*.tsv")
   message("\nVisualization plots:")
   message("  - prophages_per_sample.png")
-  message("  - tool_performance_by_sample.png")
-  message("  - overall_tool_comparison.png")
+  message("  - tool_detection_by_sample.png")
+  message("  - overall_tool_detection_comparison.png")
   message("  - length_distribution.png")
   message("  - host_phyla_distribution.png")
   

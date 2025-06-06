@@ -58,4 +58,8 @@ rule host_removal:
         | gzip -c > {output.hr1}
         samtools fastq -F 3584 -f 141 {config[outdir]}/preprocessing/{wildcards.sample}/{wildcards.sample}_output.bam \
         | gzip -c > {output.hr2}
+        
+        # Clean up intermediate files to save space
+        rm -f {config[outdir]}/preprocessing/{wildcards.sample}/{wildcards.sample}_output.bam*
+        rm -f {input.tr1} {input.tr2}
         """

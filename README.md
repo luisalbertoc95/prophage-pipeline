@@ -150,13 +150,13 @@ summary_results/
 │   ├── master_prophage_catalog.tsv
 │   ├── host_prophage_relationships.tsv
 │   ├── sample_level_summary.tsv
-│   ├── tool_performance_overall.tsv
+│   ├── tool_detection_overall.tsv
 │   ├── tool_overlap_analysis.tsv
-│   └── tool_performance_by_sample.tsv
+│   └── tool_detection_by_sample.tsv
 ├── plots/                      # Basic visualizations
 │   ├── prophages_per_sample.png
-│   ├── tool_performance_by_sample.png
-│   ├── overall_tool_comparison.png
+│   ├── tool_detection_by_sample.png
+│   ├── overall_tool_detection_comparison.png
 │   ├── length_distribution.png
 │   └── host_phyla_distribution.png
 └── per_sample_summaries/       # Individual sample files
@@ -169,7 +169,7 @@ summary_results/
 - **`master_prophage_catalog.tsv`** - Complete catalog of all detected prophages with coordinates, tools, quality metrics, and taxonomy
 - **`host_prophage_relationships.tsv`** - Host taxonomy information for each prophage at all taxonomic levels
 - **`sample_level_summary.tsv`** - Per-sample statistics including counts, length distributions, and quality metrics
-- **`tool_performance_*.tsv`** - Comprehensive tool performance analysis and overlap statistics
+- **`tool_detection_*.tsv`** - Comprehensive tool detection comparison and overlap statistics
 
 ### Usage Examples
 
