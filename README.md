@@ -111,37 +111,76 @@ outputs/
 6. **Taxonomy**: Taxonomic classification using CAT/BAT
 7. **Prophage Analysis**: Multi-tool prophage detection using geNomad and PhiSpy, with results merged using custom R script
 
-## Automatic Summary Generation
+## Comprehensive Results Summary
 
-The pipeline can automatically generate comprehensive summaries and visualizations after all samples are processed:
+The pipeline generates a complete data warehouse of results for flexible downstream analysis:
 
-### Option 1: Run Pipeline with Automatic Summaries
+### Option 1: Run Pipeline with Automatic Summary Generation
 ```bash
 snakemake all_with_summary --profile ../profile/slurm/ --config reads=/path/to/reads outdir=/path/to/output
 ```
 
-### Option 2: Generate Summaries After Pipeline Completion
+### Option 2: Generate Summary After Pipeline Completion
 ```bash
-snakemake all_summaries --profile ../profile/slurm/ --config outdir=/path/to/output
+snakemake create_comprehensive_summary --profile ../profile/slurm/ --config outdir=/path/to/output
 ```
 
 ### Manual Summary Generation
-You can also run the summary scripts independently:
-
 ```bash
-# Generate Python visualizations
-python workflow/scripts/create_summary_plots.py /path/to/output
-
-# Generate R HTML report
-Rscript workflow/scripts/create_summary_report.R /path/to/output
+Rscript workflow/scripts/create_comprehensive_summary.R /path/to/output
 ```
 
-### Summary Outputs
+## Summary Output Structure
 
-The summary generation creates:
-- `summary_plots/` - Python-generated publication-quality plots (PNG)
-- `summary_plots_R/` - R-generated plots
-- `prophage_summary_report.html` - Interactive HTML report
-- `prophage_summary_by_sample.tsv` - Per-sample statistics
-- `tool_detection_summary.tsv` - Tool performance metrics
+Results are organized in `outdir/summary_results/` with the following structure:
+
+```
+summary_results/
+├── SUMMARY_REPORT.md           # Main summary report with embedded plots
+├── tables/                     # Data warehouse tables
+│   ├── master_prophage_catalog.tsv
+│   ├── host_prophage_relationships.tsv
+│   ├── sample_level_summary.tsv
+│   ├── tool_performance_overall.tsv
+│   ├── tool_overlap_analysis.tsv
+│   └── tool_performance_by_sample.tsv
+├── plots/                      # Basic visualizations
+│   ├── prophages_per_sample.png
+│   ├── tool_performance_by_sample.png
+│   ├── overall_tool_comparison.png
+│   ├── length_distribution.png
+│   └── host_phyla_distribution.png
+└── per_sample_summaries/       # Individual sample files
+    ├── sample1_prophage_summary.tsv
+    └── sample2_prophage_summary.tsv
+```
+
+### Key Data Files
+
+- **`master_prophage_catalog.tsv`** - Complete catalog of all detected prophages with coordinates, tools, quality metrics, and taxonomy
+- **`host_prophage_relationships.tsv`** - Host taxonomy information for each prophage at all taxonomic levels
+- **`sample_level_summary.tsv`** - Per-sample statistics including counts, length distributions, and quality metrics
+- **`tool_performance_*.tsv`** - Comprehensive tool performance analysis and overlap statistics
+
+### Usage Examples
+
+```r
+# Load main dataset
+library(tidyverse)
+prophages <- read_tsv("summary_results/tables/master_prophage_catalog.tsv")
+
+# Filter high-quality prophages
+high_quality <- prophages %>% 
+  filter(checkv_quality %in% c("High-quality", "Complete"))
+
+# Compare samples
+sample_comparison <- prophages %>%
+  group_by(sample_id) %>%
+  summarise(n_prophages = n(), mean_length = mean(length))
+
+# Analyze host taxonomy
+host_diversity <- prophages %>%
+  group_by(sample_id) %>%
+  summarise(unique_phyla = n_distinct(phylum, na.rm = TRUE))
+```
 
