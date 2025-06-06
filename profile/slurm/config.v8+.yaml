@@ -1,9 +1,6 @@
 # slurm resource configuration
 executor: slurm
 
-# SLURM-specific settings for v8+
-slurm:
-  jobname: "{rule}_{wildcards}"
 
 # Resources to use if not otherwise specified    
 default-resources:
