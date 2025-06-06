@@ -4,7 +4,7 @@ executor: slurm
 #cluster-generic-submit-cmd: "sbatch"
 
 # Job naming pattern
-jobname: "{rule}_{wildcards}"
+jobname: "{rule}_{wildcards}.{jobid}"
 
 # Resources to use if not otherwise specified    
 default-resources:
