@@ -16,6 +16,9 @@ dependencies:
   - r-htmlwidgets
   - r-knitr
   - r-kableextra
+  - r-venndiagram
+  - r-rcolorbrewer
+  - r-scales
   - python=3.9
   - pandas
   - matplotlib
