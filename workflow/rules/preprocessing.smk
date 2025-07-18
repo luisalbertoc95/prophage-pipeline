@@ -16,26 +16,12 @@ rule fastp:
     shell:
         "fastp -l {params.l} -i {input.r1} -I {input.r2} -o {output.tr1} -O {output.tr2} 2> {log}"
 
-# Get database for host removal step
-rule get_db:
-    conda: "../envs/kneaddata.yaml"
-    output:
-        "ref/db_done"
-    log:
-        os.path.join(config["outdir"], "logs", "get_db")
-    shell:
-        """
-        mkdir -p ref
-        kneaddata_database --download human_genome bowtie2 ref 2> {log}
-        touch ref/db_done
-        """
     
 # Remove host contamination
 rule host_removal:
     input:
         tr1 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_1_trimmed.fastq.gz"),
         tr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_trimmed.fastq.gz"),
-        db_done = "ref/db_done"
     params:
         db = config["human_ref"]
     threads: 16
