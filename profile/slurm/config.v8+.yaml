@@ -23,10 +23,10 @@ set-resources:
     host_removal:
         mem: 50G
         cpus_per_task: 16
-    spades:
-        mem: 512G
-        cpus_per_task: 12
-        time: 400 
+    megahit:
+        mem: 32G
+        cpus_per_task: 24
+        time: 180 
     genomad:
         mem: 50G
     checkm:
