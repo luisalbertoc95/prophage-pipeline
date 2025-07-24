@@ -17,7 +17,7 @@ rule megahit:
         megahit -1 {input.hr1} -2 {input.hr2} \
         -t {threads} --min-contig-len 1000 \
         --k-min 21 --k-max 141 --k-step 12 \
-        -o {output.dir} 2> {log}
+        --force -o {output.dir} 2> {log}
         
         # Convert MEGAHIT headers to SPAdes format for compatibility
         python3 -c "
