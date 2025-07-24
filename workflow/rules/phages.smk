@@ -123,7 +123,7 @@ rule checkv:
 
 rule run_everything:
     input:
-        coverm = os.path.join(config["outdir"], "{sample}", "coverm"),
+        coverm_stats = os.path.join(config["outdir"], "{sample}", "coverm", "{sample}_stats.txt"),
         checkm = os.path.join(config["outdir"], "{sample}", "binning", "checkm"),
         checkv = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv"),
         prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta")

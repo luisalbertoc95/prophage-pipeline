@@ -24,7 +24,7 @@ rule host_removal:
         tr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_trimmed.fastq.gz"),
     params:
         db = config["human_ref"]
-    threads: 16
+    threads: 24
     conda: "../envs/minimap_env.yaml"
     output:
         hr1 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_1_hr.fastq.gz"),
@@ -44,4 +44,7 @@ rule host_removal:
         | gzip -c > {output.hr1}
         samtools fastq -F 3584 -f 141 {config[outdir]}/{wildcards.sample}/preprocessing/{wildcards.sample}_output.bam \
         | gzip -c > {output.hr2}
+        
+        # Clean up intermediate files to save space
+        rm -f {config[outdir]}/{wildcards.sample}/preprocessing/{wildcards.sample}_output.bam*
         """
