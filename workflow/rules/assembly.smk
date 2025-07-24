@@ -3,7 +3,7 @@ rule megahit:
         hr1 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_1_hr.fastq.gz"),
         hr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_hr.fastq.gz"),
     threads: 24
-    conda: "../envs/megahit_env.yaml"
+    conda: config["conda_envs"]["megahit"]
     output:
         dir = directory(os.path.join(config["outdir"], "{sample}", "assembly")),
         contigs = os.path.join(config["outdir"], "{sample}", "assembly", "contigs.fasta")

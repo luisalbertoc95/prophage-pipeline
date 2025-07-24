@@ -5,7 +5,7 @@ rule cat:
         db = os.path.join(config["cat_database"], "2021-01-07_CAT_database"),
         tax = os.path.join(config["cat_database"], "2021-01-07_taxonomy")
     threads: 24
-    conda: "../envs/cat_env.yaml"
+    conda: config["conda_envs"]["cat"]
     output:
         directory(os.path.join(config["outdir"], "{sample}", "taxonomy", "CAT"))
     log:

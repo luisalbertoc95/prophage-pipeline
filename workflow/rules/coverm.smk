@@ -38,7 +38,7 @@ rule coverm_cluster:
     input:
         os.path.join(config["outdir"], "all_bins", "all_samples")
     threads: 24
-    conda: "../envs/coverm_env.yaml"
+    conda: config["conda_envs"]["coverm"]
     output:
         directory(os.path.join(config["outdir"], "all_bins_clustered"))
     log:
@@ -62,7 +62,7 @@ rule coverm_mapping:
         hr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_hr.fastq.gz"),
         contigs = os.path.join(config["outdir"], "all_bins_clustered")
     threads: 24
-    conda: "../envs/coverm_env.yaml"
+    conda: config["conda_envs"]["coverm"]
     output:
         coverm_dir = directory(os.path.join(config["outdir"], "{sample}", "coverm")),
         stats_file = os.path.join(config["outdir"], "{sample}", "coverm", "{sample}_stats.txt")

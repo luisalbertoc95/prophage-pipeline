@@ -5,7 +5,7 @@ rule fastp:
         r2 = os.path.join(config["reads"], config["fastq_names_2"]),
     params:
         l = config["fastp_min_sequence_length"]
-    conda: "../envs/fastp_test.yaml"
+    conda: config["conda_envs"]["fastp"]
     output:
         tr1 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_1_trimmed.fastq.gz"),
         tr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_trimmed.fastq.gz"),
@@ -25,7 +25,7 @@ rule host_removal:
     params:
         db = config["human_ref"]
     threads: 24
-    conda: "../envs/minimap_env.yaml"
+    conda: config["conda_envs"]["minimap"]
     output:
         hr1 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_1_hr.fastq.gz"),
         hr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_hr.fastq.gz"),
