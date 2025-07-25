@@ -1,5 +1,5 @@
 
-![updated_workflow_091024 drawio](https://github.com/user-attachments/assets/4f59c6d9-a453-4985-a11e-f8eed6714539)
+<img width="930" height="580" alt="updated_workflow_072525 drawio" src="https://github.com/user-attachments/assets/4da9d036-4329-403c-a740-8934d393b127" />
 
 
 # How to run:
