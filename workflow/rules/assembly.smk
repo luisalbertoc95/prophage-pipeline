@@ -15,7 +15,7 @@ rule megahit:
         """
         # Run MEGAHIT assembly
         megahit -1 {input.hr1} -2 {input.hr2} \
-        -t {threads} --min-contig-len 1000 \
+        -t {threads} --min-contig-len 500 \
         --k-min 21 --k-max 141 --k-step 12 \
         --force -o {output.dir} 2> {log}
         
@@ -29,7 +29,7 @@ with open('{output.dir}/final.contigs.fa', 'r') as infile, open('{output.contigs
             # Extract length from MEGAHIT header: '>k141_1234 flag=1 multi=2.0000 len=4567'
             length_match = re.search(r'len=(\\d+)', line)
             cov_match = re.search(r'multi=([\\d.]+)', line)
-            length = length_match.group(1) if length_match else '1000'
+            length = length_match.group(1) if length_match else '500'
             cov = cov_match.group(1) if cov_match else '1.0'
             # Create SPAdes-compatible header
             new_header = f'>NODE_{{node_counter}}_length_{{length}}_cov_{{cov}}\\n'
