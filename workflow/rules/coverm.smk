@@ -38,7 +38,7 @@ rule coverm_cluster:
     input:
         os.path.join(config["outdir"], "all_bins", "all_samples")
     threads: 24
-    conda: "../envs/coverm_env.yaml"
+    conda: config["conda_envs"]["coverm"]
     output:
         directory(os.path.join(config["outdir"], "all_bins_clustered"))
     log:
@@ -62,19 +62,20 @@ rule coverm_mapping:
         hr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_hr.fastq.gz"),
         contigs = os.path.join(config["outdir"], "all_bins_clustered")
     threads: 24
-    conda: "../envs/coverm_env.yaml"
+    conda: config["conda_envs"]["coverm"]
     output:
-        directory(os.path.join(config["outdir"], "{sample}", "coverm"))
+        coverm_dir = directory(os.path.join(config["outdir"], "{sample}", "coverm")),
+        stats_file = os.path.join(config["outdir"], "{sample}", "coverm", "{sample}_stats.txt")
     log:
         os.path.join(config["outdir"], "logs", "coverm", "{sample}.log")
     benchmark:
         os.path.join(config["outdir"], "benchmarks", "coverm", "{sample}_bmrk.txt")
     shell:
         """
-        mkdir -p {output}
+        mkdir -p {output.coverm_dir}
 
         coverm contig -1 {input.hr1} -2 {input.hr2} -r {config[outdir]}/all_bins_clustered.fasta \
         --mapper minimap2-sr --threads {threads} \
         --methods rpkm count variance mean covered_fraction covered_bases \
-        > {output}/{wildcards.sample}_stats.txt 2> {log}
+        > {output.stats_file} 2> {log}
         """

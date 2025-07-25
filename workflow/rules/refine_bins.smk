@@ -5,7 +5,7 @@ rule dastool:
         maxbin_tsv = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "maxbin.contigs2bin.tsv"),
         metabat_tsv = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "metabat.contigs2bin.tsv")
     threads: 24
-    conda: "../envs/dastool_env.yaml"
+    conda: config["conda_envs"]["dastool"]
     output:
         os.path.join(config["outdir"], "{sample}", "binning", "done")
     log:
@@ -28,7 +28,7 @@ rule filter_unbinned:
     input:
         contigs_filt = os.path.join(config["outdir"], "{sample}", "assembly", "contigs_filt_1000bp.fasta"),
         dastool = os.path.join(config["outdir"], "{sample}", "binning", "done")
-    conda: "../envs/minimap_env.yaml" 
+    conda: config["conda_envs"]["minimap"] 
     output:
         final_contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
         unbinned_4000bp = os.path.join(config["outdir"], "{sample}", "binning","filt_4000_seqs_to_keep.fasta"),
@@ -83,7 +83,7 @@ rule checkm:
     input:
         os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins")
     threads: 24
-    conda: "../envs/checkm_env.yaml"
+    conda: config["conda_envs"]["checkm"]
     output:
         directory(os.path.join(config["outdir"], "{sample}", "binning", "checkm"))
     log:

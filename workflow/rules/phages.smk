@@ -1,6 +1,6 @@
 rule genomad_db:
     output: directory(config["genomad_database"])
-    conda: "../envs/genomad_env.yaml"
+    conda: config["conda_envs"]["genomad"]
     shell:
         "genomad download-database ref"
 
@@ -9,7 +9,7 @@ rule genomad:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
         db = config["genomad_database"]
     threads: 24
-    conda: "../envs/genomad_env.yaml"
+    conda: config["conda_envs"]["genomad"]
     output:
         directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"))
     log:
@@ -28,7 +28,7 @@ rule genomad:
 
 rule download_bakta_db:
     output: directory(config["bakta_database"])
-    conda: "../envs/bakta_env.yaml"
+    conda: config["conda_envs"]["bakta"]
     shell:
         "bakta_db download --output {output} --type full"
 
@@ -37,7 +37,7 @@ rule bakta:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filt_contigs_5000.fasta"),
         db = config["bakta_database"]
     threads: 24
-    conda: "../envs/bakta_env.yaml"
+    conda: config["conda_envs"]["bakta"]
     output: 
         directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "bakta"))
     log:
@@ -54,7 +54,7 @@ rule phispy:
     input:
         os.path.join(config["outdir"], "{sample}", "phage_analysis", "bakta")
     threads: 24
-    conda: "../envs/phispy_env.yaml"
+    conda: config["conda_envs"]["phispy"]
     output:
         directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"))
     log:
@@ -69,7 +69,7 @@ rule phage_all:
         genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
         phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
         CAT = os.path.join(config["outdir"], "{sample}", "taxonomy", "CAT")
-    conda: "../envs/phage_all_env.yaml"
+    conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
         table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
@@ -95,7 +95,7 @@ rule final_prophage_output:
 rule checkv_db:
     output:
         directory(config["checkv_database"])
-    conda: "../envs/checkv_env.yaml"
+    conda: config["conda_envs"]["checkv"]
     shell:
         """
         checkv download_database {output}
@@ -106,7 +106,7 @@ rule checkv:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
         db = config["checkv_database"]
     threads: 24
-    conda: "../envs/checkv_env.yaml"
+    conda: config["conda_envs"]["checkv"]
     output:
         directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv"))
     log:
@@ -123,7 +123,7 @@ rule checkv:
 
 rule run_everything:
     input:
-        coverm = os.path.join(config["outdir"], "{sample}", "coverm"),
+        coverm_stats = os.path.join(config["outdir"], "{sample}", "coverm", "{sample}_stats.txt"),
         checkm = os.path.join(config["outdir"], "{sample}", "binning", "checkm"),
         checkv = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv"),
         prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta")
