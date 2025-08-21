@@ -93,19 +93,21 @@ phispy_unique <- phispy_unique %>%
   select(contig, start, end, tool)
 
 # Get taxonomy output in the right format
-CAT_path <- file.path(snakemake@input[["CAT"]],
+mmseqs_path <- file.path(snakemake@input[["mmseqs"]],
                          "contig.taxonomy")
-CAT <- read_tsv(CAT_path) %>%
-  separate_wider_delim('# contig', '_', names=c('Node', 'contig', 'x', 'length_c', 'y', 'cov')) %>%  
+mmseqs_tax <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "lineage")) %>%
+  separate_wider_delim(contig_full, '_', names=c('Node', 'contig', 'x', 'length_c', 'y', 'cov')) %>%  
   as.data.frame() %>%
-  select(contig, superkingdom:species)
+  select(contig, lineage) %>%
+  separate_wider_delim(lineage, ';', names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+  select(contig, superkingdom, phylum, class, order, family, genus, species)
 
 # Merge the tables
 final_prophage_table <- rbind(genomad, phispy_unique)
 
 final_prophage_table_tax <- rbind(genomad, phispy_unique) %>%
   mutate(contig = as.numeric(contig)) %>%
-  merge(CAT, by='contig')
+  merge(mmseqs_tax, by='contig')
   
 write.table(final_prophage_table, snakemake@output[["table"]], row.names=FALSE, sep="\t", quote=FALSE)
 write.table(final_prophage_table_tax, snakemake@output[["table_with_taxonomy"]], row.names=FALSE, sep="\t", quote=FALSE)
