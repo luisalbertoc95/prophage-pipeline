@@ -68,7 +68,7 @@ rule phage_all:
     input:
         genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
         phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
-        CAT = os.path.join(config["outdir"], "{sample}", "taxonomy", "CAT")
+        mmseqs = os.path.join(config["outdir"], "{sample}", "taxonomy", "mmseqs")
     conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),

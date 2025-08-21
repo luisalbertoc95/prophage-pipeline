@@ -1,0 +1,8 @@
+name: mmseqs_taxonomy_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - mmseqs2=15.6
+  - python=3.12.3
