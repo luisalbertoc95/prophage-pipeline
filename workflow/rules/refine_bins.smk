@@ -75,7 +75,7 @@ rule separate_unbinned:
             close(filename)
         }}'
 
-        mv NODE* dastool/{wildcards.sample}_DASTool_bins
+        mv {wildcards.sample}_NODE* dastool/{wildcards.sample}_DASTool_bins
         cd ../../../..
         """
 
