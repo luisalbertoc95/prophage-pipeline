@@ -11,8 +11,7 @@ rule rename_contigs:
         for file in $files
         do
         echo $file
-        sed "s/^>/>{wildcards.sample}_/" $file \
-        > {output}/{wildcards.sample}_$(basename $file)
+        cp $file {output}/{wildcards.sample}_$(basename $file)
         done
         """
 
