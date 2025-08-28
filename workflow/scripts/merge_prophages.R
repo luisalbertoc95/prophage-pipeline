@@ -15,7 +15,7 @@ genomad_path <- file.path(snakemake@input[["genomad"]],
                                           "final_filtered_contigs_find_proviruses", 
                                           "final_filtered_contigs_provirus.tsv")
 genomad <- read_tsv(genomad_path) %>%
-  separate_wider_delim(source_seq, '_', names=c('Node', 'contig', 'x', 'length_c', 'y', 'cov')) %>%
+  separate_wider_delim(source_seq, '_', names=c('sample', 'Node', 'contig', 'length', 'length_val', 'cov', 'cov_val'), too_few = "align_start", too_many = "drop") %>%
   as.data.frame() %>%
   select(contig, start, end) %>%
   mutate(tool = "genomad")
@@ -25,7 +25,7 @@ phispy_path <- file.path(snakemake@input[["phispy"]],
                          "prophage.tsv") 
 phispy <- read_tsv(phispy_path) %>%
   separate_wider_delim('Prophage number', '_', names=c('pp', 'pp_number')) %>%
-  separate_wider_delim(Contig, '_', names=c('Node', 'contig')) %>%
+  separate_wider_delim(Contig, '_', names=c('sample', 'Node', 'contig'), too_few = "align_start", too_many = "drop") %>%
   as.data.frame()
 
 # Debugging: print column names after separation
@@ -95,12 +95,23 @@ phispy_unique <- phispy_unique %>%
 # Get taxonomy output in the right format
 mmseqs_path <- file.path(snakemake@input[["mmseqs"]],
                          "contig.taxonomy")
-mmseqs_tax <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "lineage")) %>%
-  separate_wider_delim(contig_full, '_', names=c('Node', 'contig', 'x', 'length_c', 'y', 'cov')) %>%  
+
+# Debugging: print the first few lines of the MMseqs2 file
+print("First few lines of MMseqs2 taxonomy file:")
+print(readLines(mmseqs_path, n = 3))
+
+mmseqs_tax <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
+  separate_wider_delim(contig_full, '_', names=c('sample', 'Node', 'contig', 'length', 'length_val', 'cov', 'cov_val'), too_few = "align_start", too_many = "drop") %>%  
   as.data.frame() %>%
   select(contig, lineage) %>%
   separate_wider_delim(lineage, ';', names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
   select(contig, superkingdom, phylum, class, order, family, genus, species)
+
+# Debugging: print the structure of the parsed taxonomy
+print("Structure of parsed MMseqs2 taxonomy data:")
+print(str(mmseqs_tax))
+print("First few rows of mmseqs_tax:")
+print(head(mmseqs_tax))
 
 # Merge the tables
 final_prophage_table <- rbind(genomad, phispy_unique)
