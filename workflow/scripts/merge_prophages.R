@@ -15,7 +15,7 @@ genomad_path <- file.path(snakemake@input[["genomad"]],
                                           "final_filtered_contigs_find_proviruses", 
                                           "final_filtered_contigs_provirus.tsv")
 genomad <- read_tsv(genomad_path) %>%
-  separate_wider_delim(source_seq, '_', names=c('sample', 'Node', 'contig', 'length', 'length_val', 'cov', 'cov_val'), too_few = "align_start", too_many = "drop") %>%
+  separate_wider_delim(source_seq, '_', names=c('sample', 'Node', 'contig', 'length_text', 'length_val', 'cov_text', 'cov_val'), too_few = "align_start", too_many = "drop") %>%
   as.data.frame() %>%
   select(contig, start, end) %>%
   mutate(tool = "genomad")
@@ -101,7 +101,7 @@ print("First few lines of MMseqs2 taxonomy file:")
 print(readLines(mmseqs_path, n = 3))
 
 mmseqs_tax <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
-  separate_wider_delim(contig_full, '_', names=c('sample', 'Node', 'contig', 'length', 'length_val', 'cov', 'cov_val'), too_few = "align_start", too_many = "drop") %>%  
+  separate_wider_delim(contig_full, '_', names=c('sample', 'Node', 'contig', 'length_text', 'length_val', 'cov_text', 'cov_val'), too_few = "align_start", too_many = "drop") %>%  
   as.data.frame() %>%
   select(contig, lineage) %>%
   separate_wider_delim(lineage, ';', names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
