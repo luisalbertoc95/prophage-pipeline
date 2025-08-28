@@ -121,7 +121,7 @@ final_prophage_table <- rbind(genomad, phispy_unique)
 
 final_prophage_table_tax <- rbind(genomad, phispy_unique) %>%
   mutate(contig = as.numeric(contig)) %>%
-  merge(mmseqs_tax, by='contig')
+  merge(mmseqs_tax, by='contig', all.x = TRUE)
   
 write.table(final_prophage_table, snakemake@output[["table"]], row.names=FALSE, sep="\t", quote=FALSE)
 write.table(final_prophage_table_tax, snakemake@output[["table_with_taxonomy"]], row.names=FALSE, sep="\t", quote=FALSE)
