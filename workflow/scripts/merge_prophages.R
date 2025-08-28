@@ -15,7 +15,8 @@ genomad_path <- file.path(snakemake@input[["genomad"]],
                                           "final_filtered_contigs_find_proviruses", 
                                           "final_filtered_contigs_provirus.tsv")
 genomad <- read_tsv(genomad_path) %>%
-  separate_wider_delim(source_seq, '_', names=c('sample', 'Node', 'contig', 'length_text', 'length_val', 'cov_text', 'cov_val'), too_few = "align_start", too_many = "drop") %>%
+  # Extract contig number from format: NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_2333_length_43637_cov_146.0889
+  extract(source_seq, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
   as.data.frame() %>%
   select(contig, start, end) %>%
   mutate(tool = "genomad")
@@ -25,7 +26,8 @@ phispy_path <- file.path(snakemake@input[["phispy"]],
                          "prophage.tsv") 
 phispy <- read_tsv(phispy_path) %>%
   separate_wider_delim('Prophage number', '_', names=c('pp', 'pp_number')) %>%
-  separate_wider_delim(Contig, '_', names=c('sample', 'Node', 'contig'), too_few = "align_start", too_many = "drop") %>%
+  # Extract contig number from format: contig_27
+  extract(Contig, into = "contig", regex = "contig_(\\d+)", remove = FALSE) %>%
   as.data.frame()
 
 # Debugging: print column names after separation
@@ -101,7 +103,8 @@ print("First few lines of MMseqs2 taxonomy file:")
 print(readLines(mmseqs_path, n = 3))
 
 mmseqs_tax <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
-  separate_wider_delim(contig_full, '_', names=c('sample', 'Node', 'contig', 'length_text', 'length_val', 'cov_text', 'cov_val'), too_few = "align_start", too_many = "drop") %>%  
+  # Extract contig number from format: NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_22_length_1060_cov_5.0000
+  extract(contig_full, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%  
   as.data.frame() %>%
   select(contig, lineage) %>%
   separate_wider_delim(lineage, ';', names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
