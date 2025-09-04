@@ -64,6 +64,46 @@ rule phispy:
     shell:
         "PhiSpy.py {input}/*.gbff -o {output} --output_choice 63 2> {log} || true"
 
+rule pide:
+    input:
+        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
+        model = config["pide_model"],
+        script = config["pide_script"]
+    threads: 24
+    conda: config["conda_envs"]["pide"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "pide"))
+    log:
+        os.path.join(config["outdir"], "logs", "pide", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "pide", "{sample}_bmrk.txt")
+    shell:
+        """
+        # Create output directory
+        mkdir -p {output}
+        
+        # Run PIDE prophage detection
+        cd {input.script}
+        python pide.py --input {input.contigs} --model {input.model} --output {output} 2> {log}
+        """
+
+rule prophage_tool_comparison:
+    input:
+        genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
+        phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
+        pide = os.path.join(config["outdir"], "{sample}", "phage_analysis", "pide")
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        raw_predictions = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "raw_predictions.tsv"),
+        tool_stats = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "tool_statistics.tsv"),
+        overlap_analysis = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "overlap_analysis.tsv"),
+        agreement_summary = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "agreement_summary.tsv"),
+        unique_predictions = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "unique_predictions.tsv"),
+        unique_summary = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "unique_summary.tsv"),
+        plots = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "comparison_plots.pdf")
+    script:
+        "../scripts/compare_prophage_tools.R"
+
 rule phage_all:
     input:
         genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
@@ -120,6 +160,14 @@ rule checkv:
         -t {threads} \
         -d {input.db}
         """
+
+rule run_prophage_comparison:
+    input:
+        comparison = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "comparison_plots.pdf")
+    output:
+        os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison_done")
+    shell:
+        "touch {config[outdir]}/{wildcards.sample}/phage_analysis/comparison_done"
 
 rule run_everything:
     input:
