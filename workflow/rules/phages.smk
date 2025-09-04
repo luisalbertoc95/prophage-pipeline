@@ -64,11 +64,19 @@ rule phispy:
     shell:
         "PhiSpy.py {input}/*.gbff -o {output} --output_choice 63 2> {log} || true"
 
+# Conditional input function for taxonomy data
+def get_taxonomy_input(wildcards):
+    if config["taxonomy_method"] == "gtdbtk":
+        return os.path.join(config["outdir"], wildcards.sample, "taxonomy", "gtdbtk")
+    else:
+        return os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
+
 rule phage_all:
     input:
         genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
         phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
-        mmseqs = os.path.join(config["outdir"], "{sample}", "taxonomy", "mmseqs")
+        mmseqs = lambda wildcards: get_taxonomy_input(wildcards) if config["taxonomy_method"] == "mmseqs_nr" else [],
+        gtdbtk = lambda wildcards: get_taxonomy_input(wildcards) if config["taxonomy_method"] == "gtdbtk" else []
     conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),

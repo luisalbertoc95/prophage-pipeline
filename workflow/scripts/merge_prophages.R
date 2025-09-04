@@ -94,34 +94,78 @@ writeXStringSet(fasta_unique, filepath=snakemake@output[["fasta"]])
 phispy_unique <- phispy_unique %>%
   select(contig, start, end, tool)
 
-# Get taxonomy output in the right format
-mmseqs_path <- file.path(snakemake@input[["mmseqs"]],
-                         "contig.taxonomy")
-
-# Debugging: print the first few lines of the MMseqs2 file
-print("First few lines of MMseqs2 taxonomy file:")
-print(readLines(mmseqs_path, n = 3))
-
-mmseqs_tax <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
-  # Extract contig number from format: NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_22_length_1060_cov_5.0000
-  extract(contig_full, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%  
-  as.data.frame() %>%
-  select(contig, lineage) %>%
-  separate_wider_delim(lineage, ';', names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
-  select(contig, superkingdom, phylum, class, order, family, genus, species)
+# Get taxonomy output - handle both MMseqs2 and GTDB-Tk formats
+if ("mmseqs" %in% names(snakemake@input)) {
+  # MMseqs2 taxonomy parsing
+  mmseqs_path <- file.path(snakemake@input[["mmseqs"]], "contig.taxonomy")
+  
+  # Debugging: print the first few lines of the MMseqs2 file
+  print("First few lines of MMseqs2 taxonomy file:")
+  print(readLines(mmseqs_path, n = 3))
+  
+  taxonomy_data <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
+    # Extract contig number from format: NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_22_length_1060_cov_5.0000
+    extract(contig_full, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%  
+    as.data.frame() %>%
+    select(contig, lineage) %>%
+    separate_wider_delim(lineage, ';', names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+    select(contig, superkingdom, phylum, class, order, family, genus, species)
+    
+  print("Using MMseqs2 taxonomy data")
+  
+} else if ("gtdbtk" %in% names(snakemake@input)) {
+  # GTDB-Tk taxonomy parsing
+  gtdbtk_path <- file.path(snakemake@input[["gtdbtk"]], "gtdbtk.bac120.summary.tsv")
+  
+  # Check if archaeal file exists and combine with bacterial
+  gtdbtk_ar_path <- file.path(snakemake@input[["gtdbtk"]], "gtdbtk.ar53.summary.tsv")
+  
+  print("Reading GTDB-Tk taxonomy file")
+  
+  taxonomy_data <- data.frame()
+  
+  # Read bacterial taxonomy if file exists
+  if (file.exists(gtdbtk_path)) {
+    gtdbtk_bac <- read_tsv(gtdbtk_path) %>%
+      # Extract contig number from user_genome column
+      extract(user_genome, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
+      as.data.frame() %>%
+      select(contig, classification) %>%
+      separate_wider_delim(classification, ';', names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      rename(superkingdom = domain) %>%
+      select(contig, superkingdom, phylum, class, order, family, genus, species)
+    taxonomy_data <- rbind(taxonomy_data, gtdbtk_bac)
+  }
+  
+  # Read archaeal taxonomy if file exists
+  if (file.exists(gtdbtk_ar_path)) {
+    gtdbtk_ar <- read_tsv(gtdbtk_ar_path) %>%
+      extract(user_genome, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
+      as.data.frame() %>%
+      select(contig, classification) %>%
+      separate_wider_delim(classification, ';', names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      rename(superkingdom = domain) %>%
+      select(contig, superkingdom, phylum, class, order, family, genus, species)
+    taxonomy_data <- rbind(taxonomy_data, gtdbtk_ar)
+  }
+  
+  print("Using GTDB-Tk taxonomy data")
+} else {
+  stop("Neither mmseqs nor gtdbtk input found in snakemake inputs")
+}
 
 # Debugging: print the structure of the parsed taxonomy
-print("Structure of parsed MMseqs2 taxonomy data:")
-print(str(mmseqs_tax))
-print("First few rows of mmseqs_tax:")
-print(head(mmseqs_tax))
+print("Structure of parsed taxonomy data:")
+print(str(taxonomy_data))
+print("First few rows of taxonomy_data:")
+print(head(taxonomy_data))
 
 # Merge the tables
 final_prophage_table <- rbind(genomad, phispy_unique)
 
 final_prophage_table_tax <- rbind(genomad, phispy_unique) %>%
   mutate(contig = as.numeric(contig)) %>%
-  merge(mmseqs_tax, by='contig', all.x = TRUE)
+  merge(taxonomy_data, by='contig', all.x = TRUE)
   
 write.table(final_prophage_table, snakemake@output[["table"]], row.names=FALSE, sep="\t", quote=FALSE)
 write.table(final_prophage_table_tax, snakemake@output[["table_with_taxonomy"]], row.names=FALSE, sep="\t", quote=FALSE)

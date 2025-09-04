@@ -31,3 +31,38 @@ rule mmseqs_taxonomy:
         # Clean up temporary files
         rm -rf {output}/tmp {output}/queryDB* {output}/taxonomyResult*
         """
+
+rule gtdbtk_taxonomy:
+    input:
+        os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta")
+    params:
+        db = config["gtdbtk_database"]
+    threads: 24
+    conda: config["conda_envs"]["gtdbtk"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "taxonomy", "gtdbtk"))
+    log:
+        os.path.join(config["outdir"], "logs", "gtdbtk", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "gtdbtk", "{sample}_bmrk.txt")
+    shell:
+        """
+        set -ue
+        mkdir -p {output}/genomes
+        
+        # Copy input file to genome directory (GTDB-Tk expects genome files in a directory)
+        cp {input} {output}/genomes/{wildcards.sample}.fasta
+        
+        # Set GTDBTK_DATA_PATH environment variable
+        export GTDBTK_DATA_PATH={params.db}
+        
+        # Run GTDB-Tk classify workflow
+        gtdbtk classify_wf --genome_dir {output}/genomes --out_dir {output} \
+        --cpus {threads} --extension fasta 2> {log}
+        """
+
+# Conditional rule selection based on taxonomy method
+if config["taxonomy_method"] == "gtdbtk":
+    ruleorder: gtdbtk_taxonomy > mmseqs_taxonomy
+else:
+    ruleorder: mmseqs_taxonomy > gtdbtk_taxonomy
