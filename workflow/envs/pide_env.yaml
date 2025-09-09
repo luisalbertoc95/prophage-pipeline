@@ -5,7 +5,7 @@ channels:
   - pytorch
 dependencies:
   - python=3.9
-  - pytorch-cpu
+  - pytorch-cpu=2.0.*  # Pin to PyTorch 2.0.x to avoid 2.6 weights_only changes
   - pandas
   - biopython
   - prodigal

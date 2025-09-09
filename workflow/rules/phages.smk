@@ -164,14 +164,9 @@ rule pide:
         # Create output directory
         mkdir -p {output}
         
-        # Run PIDE prophage detection with PyTorch 2.6 compatibility fix
+        # Run PIDE prophage detection
         cd {config[pide_repository]}
-        
-        # Create a temporary patched classification.py to fix PyTorch 2.6 weights_only issue
-        cp classification.py classification_patched.py
-        sed -i 's/torch.load(args.model, map_location=device)/torch.load(args.model, map_location=device, weights_only=False)/g' classification_patched.py
-        
-        python classification_patched.py -m -o {output} {input.contigs} {input.model} 2> {log}
+        python classification.py -m -o {output} {input.contigs} {input.model} 2> {log}
         """
 
 rule prophage_tool_comparison:
