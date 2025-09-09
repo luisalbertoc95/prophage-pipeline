@@ -227,6 +227,8 @@ rule checkv_genomad:
     input:
         genomad_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
         db = config["checkv_database"]
+    resources:
+        mem_mb=50000  # 50GB - generous allocation for CheckV with large datasets
     threads: 24
     conda: config["conda_envs"]["checkv"]
     output:
@@ -247,6 +249,8 @@ rule checkv_phispy:
     input:
         phispy_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
         db = config["checkv_database"]
+    resources:
+        mem_mb=50000  # 50GB - generous allocation for CheckV with large datasets
     threads: 24
     conda: config["conda_envs"]["checkv"]
     output:
@@ -267,6 +271,8 @@ rule checkv_pide:
     input:
         pide_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "pide"),
         db = config["checkv_database"]
+    resources:
+        mem_mb=50000  # 50GB - generous allocation for CheckV with large datasets
     threads: 24
     conda: config["conda_envs"]["checkv"]
     output:
@@ -298,6 +304,8 @@ rule enhanced_tool_comparison:
         checkv_genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_genomad"),
         checkv_phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_phispy"),
         checkv_pide = os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_pide")
+    resources:
+        mem_mb=16000  # 16GB - R analysis with multiple large datasets
     conda: config["conda_envs"]["phage_all"]
     output:
         raw_predictions = os.path.join(config["outdir"], "{sample}", "phage_analysis", "enhanced_comparison", "raw_predictions_with_quality.tsv"),
