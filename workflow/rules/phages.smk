@@ -92,13 +92,33 @@ rule download_pide_model:
         # Verify download succeeded
         if [ -f "PIDE.model.tar.gz" ]; then
             echo "Download successful, extracting..." >> {log}
+            
+            # Check archive contents first
+            echo "Archive contents:" >> {log}
+            tar -tzf PIDE.model.tar.gz 2>> {log}
+            
+            # Extract archive
             tar xzf PIDE.model.tar.gz 2>> {log}
             
-            # Move extracted model to final location using rsync
-            echo "Moving to final destination using rsync..." >> {log}
-            rsync -avP PIDE.model {output.model} 2>> {log}
+            # List what was actually extracted
+            echo "Extracted files:" >> {log}
+            ls -la >> {log}
             
-            echo "PIDE model installation complete" >> {log}
+            # Transfer all extracted contents to final location to preserve any dependencies
+            echo "Moving all extracted files to final destination..." >> {log}
+            mkdir -p $(dirname {output.model})
+            rsync -avP ./ $(dirname {output.model})/ 2>> {log}
+            
+            # Create symlink or copy main model file to expected location
+            MODEL_FILE=$(find $(dirname {output.model}) -name "*.ckpt" -type f | head -1)
+            if [ -n "$MODEL_FILE" ]; then
+                echo "Creating model file at expected location: $MODEL_FILE -> {output.model}" >> {log}
+                cp "$MODEL_FILE" {output.model} 2>> {log}
+                echo "PIDE model installation complete" >> {log}
+            else
+                echo "No .ckpt model file found after transfer" >> {log}
+                exit 1
+            fi
         else
             echo "Download failed - PIDE.model.tar.gz not found in scratch" >> {log}
             exit 1
