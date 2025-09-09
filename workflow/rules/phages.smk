@@ -94,6 +94,8 @@ rule download_pide_model:
         """
 
 rule clone_pide:
+    input:
+        model = config["pide_model"]  # Wait for model download to complete first
     conda: config["conda_envs"]["pide"]
     output:
         pide_script = os.path.join(config["pide_repository"], "classification.py")
