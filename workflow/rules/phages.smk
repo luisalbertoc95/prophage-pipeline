@@ -72,25 +72,40 @@ rule download_pide_model:
         os.path.join(config["outdir"], "logs", "pide_download.log")
     shell:
         """
-        # Create directory and ensure we have write permissions
+        # Two-stage download: local scratch -> final destination
+        # This avoids network filesystem issues with large downloads
+        
+        # Create final directory
         mkdir -p $(dirname {output.model})
-        cd $(dirname {output.model})
         
-        # Remove any partial downloads
-        rm -f PIDE.model.tar.gz*
+        # Use local scratch space for download (usually /tmp or $TMPDIR)
+        SCRATCH_DIR=$(mktemp -d)
+        cd $SCRATCH_DIR
         
-        # Download with retry and timeout options
-        wget --timeout=30 --tries=3 --retry-connrefused \
-        https://zenodo.org/records/12759619/files/PIDE.model.tar.gz 2> {log}
+        echo "Downloading PIDE model to scratch directory: $SCRATCH_DIR" > {log}
         
-        # Verify download succeeded before extracting
+        # Download to scratch with robust settings
+        wget --timeout=60 --tries=5 --retry-connrefused --progress=dot:giga \
+        https://zenodo.org/records/12759619/files/PIDE.model.tar.gz 2>> {log}
+        
+        # Verify download succeeded
         if [ -f "PIDE.model.tar.gz" ]; then
-            tar xzvf PIDE.model.tar.gz 2>> {log}
-            rm PIDE.model.tar.gz
+            echo "Download successful, extracting..." >> {log}
+            tar xzf PIDE.model.tar.gz 2>> {log}
+            
+            # Move extracted model to final location using rsync
+            echo "Moving to final destination using rsync..." >> {log}
+            rsync -avP PIDE.model {output.model} 2>> {log}
+            
+            echo "PIDE model installation complete" >> {log}
         else
-            echo "Download failed - PIDE.model.tar.gz not found" >> {log}
+            echo "Download failed - PIDE.model.tar.gz not found in scratch" >> {log}
             exit 1
         fi
+        
+        # Clean up scratch directory
+        cd /
+        rm -rf $SCRATCH_DIR
         """
 
 rule clone_pide:
