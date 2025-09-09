@@ -78,8 +78,9 @@ rule download_pide_model:
         # Create final directory
         mkdir -p $(dirname {output.model})
         
-        # Use local scratch space for download (usually /tmp or $TMPDIR)
-        SCRATCH_DIR=$(mktemp -d)
+        # Use output directory for temporary download to avoid /tmp space issues
+        SCRATCH_DIR={config[outdir]}/tmp_pide_download
+        mkdir -p $SCRATCH_DIR
         cd $SCRATCH_DIR
         
         echo "Downloading PIDE model to scratch directory: $SCRATCH_DIR" > {log}
@@ -103,9 +104,9 @@ rule download_pide_model:
             exit 1
         fi
         
-        # Clean up scratch directory
+        # Clean up temporary download directory
         cd /
-        rm -rf $SCRATCH_DIR
+        rm -rf {config[outdir]}/tmp_pide_download
         """
 
 rule clone_pide:
