@@ -69,10 +69,13 @@ phispy <- phispy %>%
 
 # Load and process PIDE predictions
 print("Loading PIDE predictions...")
-pide_path <- file.path(snakemake@input[["pide"]], "predictions.tsv")
+pide_path <- file.path(snakemake@input[["pide"]], "cluster.csv")
 if (file.exists(pide_path)) {
-  pide <- read_tsv(pide_path) %>%
-    extract(contig_id, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
+  pide <- read_csv(pide_path) %>%
+    extract(Contig, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
+    as.data.frame() %>%
+    select(contig, Start, End, Contig) %>%
+    dplyr::rename(start = Start, end = End, contig_id = Contig) %>%
     mutate(
       tool = "pide",
       length = end - start + 1,
