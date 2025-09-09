@@ -166,7 +166,7 @@ rule pide:
         
         # Run PIDE prophage detection
         cd {config[pide_repository]}
-        python classification.py -p meta -o {output} {input.contigs} {input.model} 2> {log}
+        python classification.py -m -o {output} {input.contigs} {input.model} 2> {log}
         """
 
 rule prophage_tool_comparison:
