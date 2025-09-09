@@ -142,15 +142,17 @@ rule clone_pide:
         mkdir -p $(dirname {config[pide_repository]})
         cd $(dirname {config[pide_repository]})
         
-        # Only clone if directory doesn't exist
-        if [ ! -d "PIDE" ]; then
-            git clone -b development https://github.com/chyghy/PIDE.git 2> {log}
+        # Clone or re-clone if needed
+        if [ ! -d "PIDE" ] || [ ! -f "PIDE/classification.py" ]; then
+            if [ -d "PIDE" ]; then
+                echo "PIDE directory exists but classification.py is missing, removing and re-cloning..." > {log}
+                rm -rf PIDE
+            else
+                echo "Cloning PIDE repository..." > {log}
+            fi
+            git clone -b development https://github.com/chyghy/PIDE.git 2>> {log}
         else
-            echo "PIDE repository already exists, skipping clone" > {log}
-            # Reset any local modifications (like our previous patches)
-            cd PIDE
-            git checkout -- . 2>> {log}
-            git clean -fd 2>> {log}
+            echo "PIDE repository already exists with classification.py, skipping clone" > {log}
         fi
         """
 
