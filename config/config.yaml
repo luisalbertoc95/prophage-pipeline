@@ -10,8 +10,7 @@ genomad_database: "/ref/sahlab/data/viral_analysis_DBs/genomad_DBs/genomad_db"
 bakta_database: "/ref/sahlab/data/bakta_db"
 # cat_database: "/ref/sahlab/data/CAT_prepare_20210107"
 mmseqs_database: "/ref/sahlab/data/nr/nr_mmseqs15_DB"
-pide_model: "/path/to/pide/model"  # UPDATE WITH ACTUAL PATH TO PIDE.model
-pide_script: "/path/to/pide/script"  # UPDATE WITH ACTUAL PATH TO PIDE repository
+# PIDE model and script paths are now managed by Snakemake rules
 checkv_database: "/ref/sahlab/data/viral_analysis_DBs/checkV_DB/checkv-db-v1.4"
 
 # Conda environments

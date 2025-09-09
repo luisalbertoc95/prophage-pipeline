@@ -64,11 +64,40 @@ rule phispy:
     shell:
         "PhiSpy.py {input}/*.gbff -o {output} --output_choice 63 2> {log} || true"
 
+rule download_pide_model:
+    conda: config["conda_envs"]["pide"]
+    output:
+        model = os.path.join(config["outdir"], "pide_resources", "PIDE.model"),
+        model_dir = directory(os.path.join(config["outdir"], "pide_resources"))
+    log:
+        os.path.join(config["outdir"], "logs", "pide_download.log")
+    shell:
+        """
+        mkdir -p {output.model_dir}
+        cd {output.model_dir}
+        wget https://zenodo.org/records/12759619/files/PIDE.model.tar.gz 2> {log}
+        tar xzvf PIDE.model.tar.gz 2>> {log}
+        rm PIDE.model.tar.gz
+        """
+
+rule clone_pide:
+    conda: config["conda_envs"]["pide"]
+    output:
+        pide_dir = directory(os.path.join(config["outdir"], "pide_resources", "PIDE")),
+        pide_script = os.path.join(config["outdir"], "pide_resources", "PIDE", "classification.py")
+    log:
+        os.path.join(config["outdir"], "logs", "pide_clone.log")
+    shell:
+        """
+        cd {config[outdir]}/pide_resources
+        git clone https://github.com/chyghy/PIDE.git 2> {log}
+        """
+
 rule pide:
     input:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
-        model = config["pide_model"],
-        script = config["pide_script"]
+        model = os.path.join(config["outdir"], "pide_resources", "PIDE.model"),
+        script = os.path.join(config["outdir"], "pide_resources", "PIDE", "classification.py")
     threads: 24
     conda: config["conda_envs"]["pide"]
     output:
@@ -83,8 +112,8 @@ rule pide:
         mkdir -p {output}
         
         # Run PIDE prophage detection
-        cd {input.script}
-        python pide.py --input {input.contigs} --model {input.model} --output {output} 2> {log}
+        cd {config[outdir]}/pide_resources/PIDE
+        python classification.py -o {output} {input.contigs} {input.model} 2> {log}
         """
 
 rule prophage_tool_comparison:
@@ -174,7 +203,8 @@ rule run_everything:
         coverm_stats = os.path.join(config["outdir"], "{sample}", "coverm", "{sample}_stats.txt"),
         checkm = os.path.join(config["outdir"], "{sample}", "binning", "checkm"),
         checkv = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv"),
-        prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta")
+        prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
+        comparison = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "comparison_plots.pdf")
     output:
         os.path.join(config["outdir"], "{sample}", "phage_analysis", "done")
     shell:
