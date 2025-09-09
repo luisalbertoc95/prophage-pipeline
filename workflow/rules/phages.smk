@@ -97,6 +97,8 @@ rule pide:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
         model = os.path.join(config["outdir"], "pide_resources", "PIDE.model"),
         script = os.path.join(config["outdir"], "pide_resources", "PIDE", "classification.py")
+    resources:
+        mem_mb=32000  # 32GB - generous allocation for ESM-2 model + safety margin
     threads: 24
     conda: config["conda_envs"]["pide"]
     output:
