@@ -67,14 +67,13 @@ rule phispy:
 rule download_pide_model:
     conda: config["conda_envs"]["pide"]
     output:
-        model = os.path.join(config["outdir"], "pide_resources", "PIDE.model"),
-        model_dir = directory(os.path.join(config["outdir"], "pide_resources"))
+        model = os.path.join(config["outdir"], "pide_resources", "PIDE.model")
     log:
         os.path.join(config["outdir"], "logs", "pide_download.log")
     shell:
         """
-        mkdir -p {output.model_dir}
-        cd {output.model_dir}
+        mkdir -p {config[outdir]}/pide_resources
+        cd {config[outdir]}/pide_resources
         wget https://zenodo.org/records/12759619/files/PIDE.model.tar.gz 2> {log}
         tar xzvf PIDE.model.tar.gz 2>> {log}
         rm PIDE.model.tar.gz
@@ -83,12 +82,12 @@ rule download_pide_model:
 rule clone_pide:
     conda: config["conda_envs"]["pide"]
     output:
-        pide_dir = directory(os.path.join(config["outdir"], "pide_resources", "PIDE")),
         pide_script = os.path.join(config["outdir"], "pide_resources", "PIDE", "classification.py")
     log:
         os.path.join(config["outdir"], "logs", "pide_clone.log")
     shell:
         """
+        mkdir -p {config[outdir]}/pide_resources
         cd {config[outdir]}/pide_resources
         git clone https://github.com/chyghy/PIDE.git 2> {log}
         """
