@@ -207,6 +207,92 @@ rule checkv:
         -d {input.db}
         """
 
+# Individual tool CheckV rules for tool comparison
+rule checkv_genomad:
+    input:
+        genomad_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
+        db = config["checkv_database"]
+    threads: 24
+    conda: config["conda_envs"]["checkv"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_genomad"))
+    log:
+        os.path.join(config["outdir"], "logs", "checkv_genomad", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "checkv_genomad", "{sample}_bmrk.txt")
+    shell:
+        """
+        # Use geNomad provirus sequences
+        checkv end_to_end \
+        {input.genomad_dir}/final_filtered_contigs_find_proviruses/final_filtered_contigs_provirus.fna \
+        {output} -t {threads} -d {input.db} 2> {log}
+        """
+
+rule checkv_phispy:
+    input:
+        phispy_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
+        db = config["checkv_database"]
+    threads: 24
+    conda: config["conda_envs"]["checkv"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_phispy"))
+    log:
+        os.path.join(config["outdir"], "logs", "checkv_phispy", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "checkv_phispy", "{sample}_bmrk.txt")
+    shell:
+        """
+        # Use PhiSpy prophage sequences
+        checkv end_to_end \
+        {input.phispy_dir}/phage.fasta \
+        {output} -t {threads} -d {input.db} 2> {log}
+        """
+
+rule checkv_pide:
+    input:
+        pide_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "pide"),
+        db = config["checkv_database"]
+    threads: 24
+    conda: config["conda_envs"]["checkv"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_pide"))
+    log:
+        os.path.join(config["outdir"], "logs", "checkv_pide", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "checkv_pide", "{sample}_bmrk.txt")
+    shell:
+        """
+        # Use PIDE prediction sequences - need to verify correct file name
+        # This may need adjustment based on actual PIDE output format
+        if [ -f {input.pide_dir}/predictions.fasta ]; then
+            checkv end_to_end {input.pide_dir}/predictions.fasta {output} -t {threads} -d {input.db} 2> {log}
+        elif [ -f {input.pide_dir}/prophage_sequences.fasta ]; then
+            checkv end_to_end {input.pide_dir}/prophage_sequences.fasta {output} -t {threads} -d {input.db} 2> {log}
+        else
+            echo "Could not find PIDE sequence file - checking directory contents:" > {log}
+            ls -la {input.pide_dir}/ >> {log}
+            exit 1
+        fi
+        """
+
+rule enhanced_tool_comparison:
+    input:
+        genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
+        phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
+        pide = os.path.join(config["outdir"], "{sample}", "phage_analysis", "pide"),
+        checkv_genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_genomad"),
+        checkv_phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_phispy"),
+        checkv_pide = os.path.join(config["outdir"], "{sample}", "phage_analysis", "tool_comparison", "checkv_pide")
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        raw_predictions = os.path.join(config["outdir"], "{sample}", "phage_analysis", "enhanced_comparison", "raw_predictions_with_quality.tsv"),
+        quality_stats = os.path.join(config["outdir"], "{sample}", "phage_analysis", "enhanced_comparison", "quality_statistics.tsv"),
+        tool_performance = os.path.join(config["outdir"], "{sample}", "phage_analysis", "enhanced_comparison", "tool_performance.tsv"),
+        high_confidence = os.path.join(config["outdir"], "{sample}", "phage_analysis", "enhanced_comparison", "high_confidence_predictions.tsv"),
+        plots = os.path.join(config["outdir"], "{sample}", "phage_analysis", "enhanced_comparison", "enhanced_comparison_plots.pdf")
+    script:
+        "../scripts/compare_tools_with_quality.R"
+
 rule run_prophage_comparison:
     input:
         comparison = os.path.join(config["outdir"], "{sample}", "phage_analysis", "comparison", "comparison_plots.pdf")
