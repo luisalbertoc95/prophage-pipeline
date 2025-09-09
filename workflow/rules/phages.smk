@@ -141,7 +141,13 @@ rule clone_pide:
         """
         mkdir -p $(dirname {config[pide_repository]})
         cd $(dirname {config[pide_repository]})
-        git clone -b development https://github.com/chyghy/PIDE.git 2> {log}
+        
+        # Only clone if directory doesn't exist
+        if [ ! -d "PIDE" ]; then
+            git clone -b development https://github.com/chyghy/PIDE.git 2> {log}
+        else
+            echo "PIDE repository already exists, skipping clone" > {log}
+        fi
         """
 
 rule pide:
