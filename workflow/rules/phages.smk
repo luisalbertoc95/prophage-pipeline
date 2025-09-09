@@ -67,13 +67,13 @@ rule phispy:
 rule download_pide_model:
     conda: config["conda_envs"]["pide"]
     output:
-        model = os.path.join(config["outdir"], "pide_resources", "PIDE.model")
+        model = config["pide_model"]
     log:
         os.path.join(config["outdir"], "logs", "pide_download.log")
     shell:
         """
-        mkdir -p {config[outdir]}/pide_resources
-        cd {config[outdir]}/pide_resources
+        mkdir -p $(dirname {output.model})
+        cd $(dirname {output.model})
         wget https://zenodo.org/records/12759619/files/PIDE.model.tar.gz 2> {log}
         tar xzvf PIDE.model.tar.gz 2>> {log}
         rm PIDE.model.tar.gz
@@ -82,21 +82,21 @@ rule download_pide_model:
 rule clone_pide:
     conda: config["conda_envs"]["pide"]
     output:
-        pide_script = os.path.join(config["outdir"], "pide_resources", "PIDE", "classification.py")
+        pide_script = os.path.join(config["pide_repository"], "classification.py")
     log:
         os.path.join(config["outdir"], "logs", "pide_clone.log")
     shell:
         """
-        mkdir -p {config[outdir]}/pide_resources
-        cd {config[outdir]}/pide_resources
+        mkdir -p $(dirname {config[pide_repository]})
+        cd $(dirname {config[pide_repository]})
         git clone https://github.com/chyghy/PIDE.git 2> {log}
         """
 
 rule pide:
     input:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
-        model = os.path.join(config["outdir"], "pide_resources", "PIDE.model"),
-        script = os.path.join(config["outdir"], "pide_resources", "PIDE", "classification.py")
+        model = config["pide_model"],
+        script = os.path.join(config["pide_repository"], "classification.py")
     resources:
         mem_mb=32000  # 32GB - generous allocation for ESM-2 model + safety margin
     threads: 24
@@ -113,7 +113,7 @@ rule pide:
         mkdir -p {output}
         
         # Run PIDE prophage detection
-        cd {config[outdir]}/pide_resources/PIDE
+        cd {config[pide_repository]}
         python classification.py -o {output} {input.contigs} {input.model} 2> {log}
         """
 
