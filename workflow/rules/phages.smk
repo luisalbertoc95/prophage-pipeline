@@ -147,6 +147,10 @@ rule clone_pide:
             git clone -b development https://github.com/chyghy/PIDE.git 2> {log}
         else
             echo "PIDE repository already exists, skipping clone" > {log}
+            # Reset any local modifications (like our previous patches)
+            cd PIDE
+            git checkout -- . 2>> {log}
+            git clean -fd 2>> {log}
         fi
         """
 
