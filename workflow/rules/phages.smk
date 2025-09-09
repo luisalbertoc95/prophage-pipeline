@@ -72,11 +72,25 @@ rule download_pide_model:
         os.path.join(config["outdir"], "logs", "pide_download.log")
     shell:
         """
+        # Create directory and ensure we have write permissions
         mkdir -p $(dirname {output.model})
         cd $(dirname {output.model})
-        wget https://zenodo.org/records/12759619/files/PIDE.model.tar.gz 2> {log}
-        tar xzvf PIDE.model.tar.gz 2>> {log}
-        rm PIDE.model.tar.gz
+        
+        # Remove any partial downloads
+        rm -f PIDE.model.tar.gz*
+        
+        # Download with retry and timeout options
+        wget --timeout=30 --tries=3 --retry-connrefused \
+        https://zenodo.org/records/12759619/files/PIDE.model.tar.gz 2> {log}
+        
+        # Verify download succeeded before extracting
+        if [ -f "PIDE.model.tar.gz" ]; then
+            tar xzvf PIDE.model.tar.gz 2>> {log}
+            rm PIDE.model.tar.gz
+        else
+            echo "Download failed - PIDE.model.tar.gz not found" >> {log}
+            exit 1
+        fi
         """
 
 rule clone_pide:
