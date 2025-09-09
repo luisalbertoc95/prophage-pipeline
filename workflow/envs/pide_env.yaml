@@ -3,13 +3,9 @@ channels:
   - conda-forge
   - bioconda
   - pytorch
-  - defaults
 dependencies:
-  - python=3.8
-  - pytorch
-  - torchvision
-  - torchaudio
-  - cpuonly
+  - python=3.9
+  - pytorch-cpu
   - pandas
   - biopython
   - prodigal
