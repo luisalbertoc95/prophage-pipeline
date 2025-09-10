@@ -51,7 +51,7 @@ rule gtdbtk_classify_bins:
         mkdir -p {output}/genomes
         
         # Copy only actual MAG bins (bin.*.fa) to genomes directory for GTDB-Tk
-        find {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins -name "bin.*.fa" -exec cp {{}} {output}/genomes/ \;
+        find {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins -name "bin.*.fa" -exec cp {{}} {output}/genomes/ \\;
         
         # Only run GTDB-Tk if there are bin files to process
         if [ $(find {output}/genomes -name "*.fa" | wc -l) -gt 0 ]; then
