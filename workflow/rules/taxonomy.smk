@@ -34,8 +34,7 @@ rule mmseqs_taxonomy:
 
 rule gtdbtk_classify_bins:
     input:
-        bins_done = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins"),
-        bins_dir = directory(os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}_DASTool_bins"))
+        bins_done = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins")
     params:
         db = config["gtdbtk_database"]
     threads: 24
@@ -52,7 +51,7 @@ rule gtdbtk_classify_bins:
         mkdir -p {output}/genomes
         
         # Copy all bin files (excluding unbinned.fa) to genomes directory for GTDB-Tk
-        find {input.bins_dir} -name "*.fa" ! -name "unbinned.fa" -exec cp {{}} {output}/genomes/ \;
+        find {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins -name "*.fa" ! -name "unbinned.fa" -exec cp {{}} {output}/genomes/ \;
         
         # Only run GTDB-Tk if there are bin files to process
         if [ $(find {output}/genomes -name "*.fa" | wc -l) -gt 0 ]; then

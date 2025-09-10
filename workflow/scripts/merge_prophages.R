@@ -108,7 +108,7 @@ if ("mmseqs" %in% names(snakemake@input)) {
     extract(contig_full, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%  
     as.data.frame() %>%
     select(contig, lineage) %>%
-    separate_wider_delim(lineage, ';', names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+    separate_wider_delim(lineage, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
     select(contig, superkingdom, phylum, class, order, family, genus, species)
     
   print("Using MMseqs2 taxonomy data")
@@ -161,7 +161,7 @@ if ("mmseqs" %in% names(snakemake@input)) {
       left_join(bin_contig_mapping, by = c("user_genome" = "bin_file")) %>%
       select(contig, classification) %>%
       filter(!is.na(contig)) %>%
-      separate_wider_delim(classification, ';', names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
       rename(superkingdom = domain) %>%
       select(contig, superkingdom, phylum, class, order, family, genus, species)
     taxonomy_data <- rbind(taxonomy_data, gtdbtk_bac)
@@ -176,7 +176,7 @@ if ("mmseqs" %in% names(snakemake@input)) {
       left_join(bin_contig_mapping, by = c("user_genome" = "bin_file")) %>%
       select(contig, classification) %>%
       filter(!is.na(contig)) %>%
-      separate_wider_delim(classification, ';', names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
       rename(superkingdom = domain) %>%
       select(contig, superkingdom, phylum, class, order, family, genus, species)
     taxonomy_data <- rbind(taxonomy_data, gtdbtk_ar)
