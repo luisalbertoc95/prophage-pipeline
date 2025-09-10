@@ -35,12 +35,12 @@ set-resources:
         mem: 50G
     checkm:
         mem: 50G
-    cat:
-        mem: 150G
+    mmseqs_taxonomy:
+        mem: 700G
     coverm_mapping:
         mem: 50G
     checkv:
         mem: 50G
-    gtdbtk_taxonomy:
+    gtdbtk_classify_bins:
         mem: 64G
         cpus_per_task: 24
