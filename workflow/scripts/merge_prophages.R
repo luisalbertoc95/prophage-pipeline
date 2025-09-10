@@ -114,23 +114,53 @@ if ("mmseqs" %in% names(snakemake@input)) {
   print("Using MMseqs2 taxonomy data")
   
 } else if ("gtdbtk" %in% names(snakemake@input)) {
-  # GTDB-Tk taxonomy parsing
+  # GTDB-Tk bin-level taxonomy parsing
   gtdbtk_path <- file.path(snakemake@input[["gtdbtk"]], "gtdbtk.bac120.summary.tsv")
-  
-  # Check if archaeal file exists and combine with bacterial
   gtdbtk_ar_path <- file.path(snakemake@input[["gtdbtk"]], "gtdbtk.ar53.summary.tsv")
+  gtdbtk_genomes_dir <- file.path(snakemake@input[["gtdbtk"]], "genomes")
   
-  print("Reading GTDB-Tk taxonomy file")
+  print("Reading GTDB-Tk bin-level taxonomy files")
+  
+  # Function to create bin-to-contig mapping from FASTA files
+  create_bin_contig_mapping <- function(genomes_dir) {
+    bin_contig_map <- data.frame(bin_file = character(), contig = character(), stringsAsFactors = FALSE)
+    
+    if (dir.exists(genomes_dir)) {
+      bin_files <- list.files(genomes_dir, pattern = "\\.fa$", full.names = TRUE)
+      
+      for (bin_file in bin_files) {
+        bin_name <- basename(bin_file)
+        # Read FASTA headers to get contig names
+        fasta_lines <- readLines(bin_file)
+        header_lines <- fasta_lines[grepl("^>", fasta_lines)]
+        
+        for (header in header_lines) {
+          # Extract contig number from header like ">NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_22_length_1060_cov_5.0000"
+          contig_match <- regmatches(header, regexpr("NODE_(\\d+)_", header, perl = TRUE))
+          if (length(contig_match) > 0) {
+            contig_num <- gsub("NODE_(\\d+)_", "\\1", contig_match, perl = TRUE)
+            bin_contig_map <- rbind(bin_contig_map, data.frame(bin_file = bin_name, contig = contig_num, stringsAsFactors = FALSE))
+          }
+        }
+      }
+    }
+    return(bin_contig_map)
+  }
+  
+  # Create mapping from bins to contigs
+  bin_contig_mapping <- create_bin_contig_mapping(gtdbtk_genomes_dir)
   
   taxonomy_data <- data.frame()
   
   # Read bacterial taxonomy if file exists
-  if (file.exists(gtdbtk_path)) {
-    gtdbtk_bac <- read_tsv(gtdbtk_path) %>%
-      # Extract contig number from user_genome column
-      extract(user_genome, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
+  if (file.exists(gtdbtk_path) && file.size(gtdbtk_path) > 0) {
+    gtdbtk_bac <- read_tsv(gtdbtk_path, show_col_types = FALSE) %>%
       as.data.frame() %>%
+      select(user_genome, classification) %>%
+      # Join with bin-to-contig mapping
+      left_join(bin_contig_mapping, by = c("user_genome" = "bin_file")) %>%
       select(contig, classification) %>%
+      filter(!is.na(contig)) %>%
       separate_wider_delim(classification, ';', names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
       rename(superkingdom = domain) %>%
       select(contig, superkingdom, phylum, class, order, family, genus, species)
@@ -138,18 +168,21 @@ if ("mmseqs" %in% names(snakemake@input)) {
   }
   
   # Read archaeal taxonomy if file exists
-  if (file.exists(gtdbtk_ar_path)) {
-    gtdbtk_ar <- read_tsv(gtdbtk_ar_path) %>%
-      extract(user_genome, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
+  if (file.exists(gtdbtk_ar_path) && file.size(gtdbtk_ar_path) > 0) {
+    gtdbtk_ar <- read_tsv(gtdbtk_ar_path, show_col_types = FALSE) %>%
       as.data.frame() %>%
+      select(user_genome, classification) %>%
+      # Join with bin-to-contig mapping
+      left_join(bin_contig_mapping, by = c("user_genome" = "bin_file")) %>%
       select(contig, classification) %>%
+      filter(!is.na(contig)) %>%
       separate_wider_delim(classification, ';', names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
       rename(superkingdom = domain) %>%
       select(contig, superkingdom, phylum, class, order, family, genus, species)
     taxonomy_data <- rbind(taxonomy_data, gtdbtk_ar)
   }
   
-  print("Using GTDB-Tk taxonomy data")
+  print(paste("Using GTDB-Tk bin-level taxonomy data with", nrow(taxonomy_data), "classified contigs"))
 } else {
   stop("Neither mmseqs nor gtdbtk input found in snakemake inputs")
 }

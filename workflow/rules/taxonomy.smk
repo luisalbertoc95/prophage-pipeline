@@ -32,9 +32,10 @@ rule mmseqs_taxonomy:
         rm -rf {output}/tmp {output}/queryDB* {output}/taxonomyResult*
         """
 
-rule gtdbtk_taxonomy:
+rule gtdbtk_classify_bins:
     input:
-        os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta")
+        bins_done = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins"),
+        bins_dir = directory(os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}_DASTool_bins"))
     params:
         db = config["gtdbtk_database"]
     threads: 24
@@ -50,19 +51,28 @@ rule gtdbtk_taxonomy:
         set -ue
         mkdir -p {output}/genomes
         
-        # Copy input file to genome directory (GTDB-Tk expects genome files in a directory)
-        cp {input} {output}/genomes/{wildcards.sample}.fasta
+        # Copy all bin files (excluding unbinned.fa) to genomes directory for GTDB-Tk
+        find {input.bins_dir} -name "*.fa" ! -name "unbinned.fa" -exec cp {{}} {output}/genomes/ \;
         
-        # Set GTDBTK_DATA_PATH environment variable
-        export GTDBTK_DATA_PATH={params.db}
-        
-        # Run GTDB-Tk classify workflow
-        gtdbtk classify_wf --genome_dir {output}/genomes --out_dir {output} \
-        --cpus {threads} --extension fasta --skip_ani_screen 2> {log}
+        # Only run GTDB-Tk if there are bin files to process
+        if [ $(find {output}/genomes -name "*.fa" | wc -l) -gt 0 ]; then
+            # Set GTDBTK_DATA_PATH environment variable
+            export GTDBTK_DATA_PATH={params.db}
+            
+            # Run GTDB-Tk classify workflow on individual MAG bins
+            gtdbtk classify_wf --genome_dir {output}/genomes --out_dir {output} \
+            --cpus {threads} --extension fa --skip_ani_screen 2> {log}
+        else
+            echo "No MAG bins found for GTDB-Tk classification" > {log}
+            # Create empty output files to satisfy Snakemake
+            mkdir -p {output}/classify
+            touch {output}/gtdbtk.bac120.summary.tsv
+            touch {output}/gtdbtk.ar53.summary.tsv
+        fi
         """
 
 # Conditional rule selection based on taxonomy method
 if config["taxonomy_method"] == "gtdbtk":
-    ruleorder: gtdbtk_taxonomy > mmseqs_taxonomy
+    ruleorder: gtdbtk_classify_bins > mmseqs_taxonomy
 else:
-    ruleorder: mmseqs_taxonomy > gtdbtk_taxonomy
+    ruleorder: mmseqs_taxonomy > gtdbtk_classify_bins
