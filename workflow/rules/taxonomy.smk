@@ -58,7 +58,7 @@ rule gtdbtk_taxonomy:
         
         # Run GTDB-Tk classify workflow
         gtdbtk classify_wf --genome_dir {output}/genomes --out_dir {output} \
-        --cpus {threads} --extension fasta 2> {log}
+        --cpus {threads} --extension fasta --skip_ani_screen 2> {log}
         """
 
 # Conditional rule selection based on taxonomy method
