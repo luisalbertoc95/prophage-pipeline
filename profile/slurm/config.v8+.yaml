@@ -42,5 +42,5 @@ set-resources:
     checkv:
         mem: 50G
     gtdbtk_classify_bins:
-        mem: 64G
+        mem: 200G
         cpus_per_task: 24
