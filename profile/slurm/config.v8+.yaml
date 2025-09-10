@@ -44,4 +44,3 @@ set-resources:
     gtdbtk_taxonomy:
         mem: 64G
         cpus_per_task: 24
-        time: 360
