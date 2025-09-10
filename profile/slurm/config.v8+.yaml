@@ -41,3 +41,7 @@ set-resources:
         mem: 50G
     checkv:
         mem: 50G
+    gtdbtk_taxonomy:
+        mem: 64G
+        cpus_per_task: 24
+        time: 360
