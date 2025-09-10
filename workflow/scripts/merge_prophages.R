@@ -136,9 +136,9 @@ if ("mmseqs" %in% names(snakemake@input)) {
         
         for (header in header_lines) {
           # Extract contig number from header like ">NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_22_length_1060_cov_5.0000"
-          contig_match <- regmatches(header, regexpr("NODE_(\\d+)_", header, perl = TRUE))
+          contig_match <- regmatches(header, regexpr("NODE_(\\\\d+)_", header, perl = TRUE))
           if (length(contig_match) > 0) {
-            contig_num <- gsub("NODE_(\\d+)_", "\\1", contig_match, perl = TRUE)
+            contig_num <- gsub("NODE_(\\\\d+)_", "\\\\1", contig_match, perl = TRUE)
             bin_contig_map <- rbind(bin_contig_map, data.frame(bin_file = bin_name, contig = contig_num, stringsAsFactors = FALSE))
           }
         }
