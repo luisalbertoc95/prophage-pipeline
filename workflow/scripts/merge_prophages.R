@@ -121,8 +121,47 @@ if ("mmseqs" %in% names(snakemake@input)) {
   
   print("Reading GTDB-Tk bin-level taxonomy files")
   
-  # Function to create bin-to-contig mapping from FASTA files
-  create_bin_contig_mapping <- function(genomes_dir) {
+  # Function to create NODE->contig mapping from Bakta input/output
+  create_node_contig_mapping <- function() {
+    node_contig_mapping <- data.frame(node_num = character(), contig_num = character(), stringsAsFactors = FALSE)
+    
+    # Path to original contigs file (Bakta input)
+    orig_input_path <- file.path(dirname(dirname(snakemake@input[["gtdbtk"]])), "binning", "final_filt_contigs_5000.fasta")
+    # Path to Bakta output with renumbered contigs
+    bakta_output_path <- file.path(dirname(dirname(snakemake@input[["gtdbtk"]])), "phage_analysis", "bakta", "final_filt_contigs_5000.fna")
+    
+    if (file.exists(orig_input_path) && file.exists(bakta_output_path)) {
+      # Read original headers to get NODE names in order
+      orig_lines <- readLines(orig_input_path)
+      orig_headers <- orig_lines[grepl("^>", orig_lines)]
+      
+      # Read Bakta headers to get contig_X names in same order
+      bakta_lines <- readLines(bakta_output_path)
+      bakta_headers <- bakta_lines[grepl("^>", bakta_lines)]
+      
+      # Create mapping: NODE number -> contig number
+      for (i in seq_along(orig_headers)) {
+        if (i <= length(bakta_headers)) {
+          # Extract NODE number from original header
+          node_match <- regmatches(orig_headers[i], regexpr("NODE_(\\d+)_", orig_headers[i], perl = TRUE))
+          if (length(node_match) > 0) {
+            node_num <- gsub("NODE_(\\d+)_", "\\1", node_match, perl = TRUE)
+            contig_num <- as.character(i)  # Bakta uses contig_1, contig_2, etc. (1-indexed)
+            node_contig_mapping <- rbind(node_contig_mapping, data.frame(node_num = node_num, contig_num = contig_num, stringsAsFactors = FALSE))
+          }
+        }
+      }
+      
+      print(paste("Created NODE->contig mapping with", nrow(node_contig_mapping), "entries"))
+    } else {
+      print("Warning: Could not find files for NODE->contig mapping")
+    }
+    
+    return(node_contig_mapping)
+  }
+
+  # Function to create bin-to-contig mapping using NODE->contig translation
+  create_bin_contig_mapping <- function(genomes_dir, node_contig_mapping) {
     bin_contig_map <- data.frame(bin_file = character(), contig = character(), stringsAsFactors = FALSE)
     
     if (dir.exists(genomes_dir)) {
@@ -135,11 +174,16 @@ if ("mmseqs" %in% names(snakemake@input)) {
         header_lines <- fasta_lines[grepl("^>", fasta_lines)]
         
         for (header in header_lines) {
-          # Extract contig number from header like ">NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_22_length_1060_cov_5.0000"
+          # Extract NODE number from bin file header
           contig_match <- regmatches(header, regexpr("NODE_(\\d+)_", header, perl = TRUE))
           if (length(contig_match) > 0) {
-            contig_num <- gsub("NODE_(\\d+)_", "\\1", contig_match, perl = TRUE)
-            bin_contig_map <- rbind(bin_contig_map, data.frame(bin_file = bin_name, contig = contig_num, stringsAsFactors = FALSE))
+            node_num <- gsub("NODE_(\\d+)_", "\\1", contig_match, perl = TRUE)
+            # Look up corresponding contig number using NODE->contig mapping
+            contig_mapping <- node_contig_mapping[node_contig_mapping$node_num == node_num, ]
+            if (nrow(contig_mapping) > 0) {
+              contig_num <- contig_mapping$contig_num[1]
+              bin_contig_map <- rbind(bin_contig_map, data.frame(bin_file = bin_name, contig = contig_num, stringsAsFactors = FALSE))
+            }
           }
         }
       }
@@ -147,8 +191,11 @@ if ("mmseqs" %in% names(snakemake@input)) {
     return(bin_contig_map)
   }
   
-  # Create mapping from bins to contigs
-  bin_contig_mapping <- create_bin_contig_mapping(gtdbtk_genomes_dir)
+  # Create NODE->contig mapping first
+  node_contig_mapping <- create_node_contig_mapping()
+  
+  # Create mapping from bins to contigs using NODE->contig translation
+  bin_contig_mapping <- create_bin_contig_mapping(gtdbtk_genomes_dir, node_contig_mapping)
   
   taxonomy_data <- data.frame()
   
