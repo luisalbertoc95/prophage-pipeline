@@ -86,7 +86,7 @@ def get_phage_all_input(wildcards):
 
 rule phage_all:
     input:
-        get_phage_all_input
+        unpack(get_phage_all_input)
     conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
