@@ -71,12 +71,22 @@ def get_taxonomy_input(wildcards):
     else:
         return os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
 
+def get_phage_all_input(wildcards):
+    inputs = {
+        "genomad": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
+        "phispy": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy")
+    }
+    
+    if config["taxonomy_method"] == "mmseqs_nr":
+        inputs["mmseqs"] = get_taxonomy_input(wildcards)
+    elif config["taxonomy_method"] == "gtdbtk":
+        inputs["gtdbtk"] = get_taxonomy_input(wildcards)
+    
+    return inputs
+
 rule phage_all:
     input:
-        genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
-        phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
-        mmseqs = lambda wildcards: get_taxonomy_input(wildcards) if config["taxonomy_method"] == "mmseqs_nr" else [],
-        gtdbtk = lambda wildcards: get_taxonomy_input(wildcards) if config["taxonomy_method"] == "gtdbtk" else []
+        get_phage_all_input
     conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
