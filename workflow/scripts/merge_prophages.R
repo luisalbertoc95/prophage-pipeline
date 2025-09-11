@@ -201,54 +201,70 @@ if ("mmseqs" %in% names(snakemake@input)) {
   
   # Read bacterial taxonomy if file exists
   if (file.exists(gtdbtk_path) && file.size(gtdbtk_path) > 0) {
-    gtdbtk_bac <- read_tsv(gtdbtk_path, show_col_types = FALSE) %>%
+    gtdbtk_bac_joined <- read_tsv(gtdbtk_path, show_col_types = FALSE) %>%
       as.data.frame() %>%
       select(user_genome, classification) %>%
       # Join with bin-to-contig mapping (add .fa extension to match bin files)
       mutate(user_genome_fa = paste0(user_genome, ".fa")) %>%
       left_join(bin_contig_mapping, by = c("user_genome_fa" = "bin_file")) %>%
       select(contig, classification) %>%
-      filter(!is.na(contig)) %>%
-      separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
-      # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
-      mutate(
-        domain = gsub("^d__", "", domain),
-        phylum = gsub("^p__", "", phylum),
-        class = gsub("^c__", "", class),
-        order = gsub("^o__", "", order),
-        family = gsub("^f__", "", family),
-        genus = gsub("^g__", "", genus),
-        species = gsub("^s__", "", species)
-      ) %>%
-      rename(superkingdom = domain) %>%
-      select(contig, superkingdom, phylum, class, order, family, genus, species)
-    taxonomy_data <- rbind(taxonomy_data, gtdbtk_bac)
+      filter(!is.na(contig))
+    
+    print(paste("Found", nrow(gtdbtk_bac_joined), "bacterial classifications with matching contigs"))
+    
+    if (nrow(gtdbtk_bac_joined) > 0) {
+      gtdbtk_bac <- gtdbtk_bac_joined %>%
+        separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+        # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
+        mutate(
+          domain = gsub("^d__", "", domain),
+          phylum = gsub("^p__", "", phylum),
+          class = gsub("^c__", "", class),
+          order = gsub("^o__", "", order),
+          family = gsub("^f__", "", family),
+          genus = gsub("^g__", "", genus),
+          species = gsub("^s__", "", species)
+        ) %>%
+        rename(superkingdom = domain) %>%
+        select(contig, superkingdom, phylum, class, order, family, genus, species)
+      taxonomy_data <- rbind(taxonomy_data, gtdbtk_bac)
+    } else {
+      print("Warning: No bacterial taxonomy data after joining bins with contigs")
+    }
   }
   
   # Read archaeal taxonomy if file exists
   if (file.exists(gtdbtk_ar_path) && file.size(gtdbtk_ar_path) > 0) {
-    gtdbtk_ar <- read_tsv(gtdbtk_ar_path, show_col_types = FALSE) %>%
+    gtdbtk_ar_joined <- read_tsv(gtdbtk_ar_path, show_col_types = FALSE) %>%
       as.data.frame() %>%
       select(user_genome, classification) %>%
       # Join with bin-to-contig mapping (add .fa extension to match bin files)
       mutate(user_genome_fa = paste0(user_genome, ".fa")) %>%
       left_join(bin_contig_mapping, by = c("user_genome_fa" = "bin_file")) %>%
       select(contig, classification) %>%
-      filter(!is.na(contig)) %>%
-      separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
-      # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
-      mutate(
-        domain = gsub("^d__", "", domain),
-        phylum = gsub("^p__", "", phylum),
-        class = gsub("^c__", "", class),
-        order = gsub("^o__", "", order),
-        family = gsub("^f__", "", family),
-        genus = gsub("^g__", "", genus),
-        species = gsub("^s__", "", species)
-      ) %>%
-      rename(superkingdom = domain) %>%
-      select(contig, superkingdom, phylum, class, order, family, genus, species)
-    taxonomy_data <- rbind(taxonomy_data, gtdbtk_ar)
+      filter(!is.na(contig))
+    
+    print(paste("Found", nrow(gtdbtk_ar_joined), "archaeal classifications with matching contigs"))
+    
+    if (nrow(gtdbtk_ar_joined) > 0) {
+      gtdbtk_ar <- gtdbtk_ar_joined %>%
+        separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+        # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
+        mutate(
+          domain = gsub("^d__", "", domain),
+          phylum = gsub("^p__", "", phylum),
+          class = gsub("^c__", "", class),
+          order = gsub("^o__", "", order),
+          family = gsub("^f__", "", family),
+          genus = gsub("^g__", "", genus),
+          species = gsub("^s__", "", species)
+        ) %>%
+        rename(superkingdom = domain) %>%
+        select(contig, superkingdom, phylum, class, order, family, genus, species)
+      taxonomy_data <- rbind(taxonomy_data, gtdbtk_ar)
+    } else {
+      print("Warning: No archaeal taxonomy data after joining bins with contigs")
+    }
   }
   
   print(paste("Using GTDB-Tk bin-level taxonomy data with", nrow(taxonomy_data), "classified contigs"))
