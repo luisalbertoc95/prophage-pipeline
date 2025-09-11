@@ -157,8 +157,9 @@ if ("mmseqs" %in% names(snakemake@input)) {
     gtdbtk_bac <- read_tsv(gtdbtk_path, show_col_types = FALSE) %>%
       as.data.frame() %>%
       select(user_genome, classification) %>%
-      # Join with bin-to-contig mapping
-      left_join(bin_contig_mapping, by = c("user_genome" = "bin_file")) %>%
+      # Join with bin-to-contig mapping (add .fa extension to match bin files)
+      mutate(user_genome_fa = paste0(user_genome, ".fa")) %>%
+      left_join(bin_contig_mapping, by = c("user_genome_fa" = "bin_file")) %>%
       select(contig, classification) %>%
       filter(!is.na(contig)) %>%
       separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
@@ -182,8 +183,9 @@ if ("mmseqs" %in% names(snakemake@input)) {
     gtdbtk_ar <- read_tsv(gtdbtk_ar_path, show_col_types = FALSE) %>%
       as.data.frame() %>%
       select(user_genome, classification) %>%
-      # Join with bin-to-contig mapping
-      left_join(bin_contig_mapping, by = c("user_genome" = "bin_file")) %>%
+      # Join with bin-to-contig mapping (add .fa extension to match bin files)
+      mutate(user_genome_fa = paste0(user_genome, ".fa")) %>%
+      left_join(bin_contig_mapping, by = c("user_genome_fa" = "bin_file")) %>%
       select(contig, classification) %>%
       filter(!is.na(contig)) %>%
       separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
