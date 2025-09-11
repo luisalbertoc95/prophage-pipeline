@@ -172,10 +172,10 @@ if ("mmseqs" %in% names(snakemake@input)) {
     if (nrow(gtdbtk_bac_joined) > 0) {
       gtdbtk_bac <- gtdbtk_bac_joined %>%
         filter(!is.na(classification) & classification != "") %>%
-        separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+        separate_wider_delim(classification, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
         # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
         mutate(
-          domain = gsub("^d__", "", domain),
+          superkingdom = gsub("^d__", "", superkingdom),
           phylum = gsub("^p__", "", phylum),
           class = gsub("^c__", "", class),
           order = gsub("^o__", "", order),
@@ -183,7 +183,6 @@ if ("mmseqs" %in% names(snakemake@input)) {
           genus = gsub("^g__", "", genus),
           species = gsub("^s__", "", species)
         ) %>%
-        rename(superkingdom = domain) %>%
         select(contig, superkingdom, phylum, class, order, family, genus, species)
       taxonomy_data <- rbind(taxonomy_data, gtdbtk_bac)
     } else {
@@ -207,10 +206,10 @@ if ("mmseqs" %in% names(snakemake@input)) {
     if (nrow(gtdbtk_ar_joined) > 0) {
       gtdbtk_ar <- gtdbtk_ar_joined %>%
         filter(!is.na(classification) & classification != "") %>%
-        separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+        separate_wider_delim(classification, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
         # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
         mutate(
-          domain = gsub("^d__", "", domain),
+          superkingdom = gsub("^d__", "", superkingdom),
           phylum = gsub("^p__", "", phylum),
           class = gsub("^c__", "", class),
           order = gsub("^o__", "", order),
@@ -218,7 +217,6 @@ if ("mmseqs" %in% names(snakemake@input)) {
           genus = gsub("^g__", "", genus),
           species = gsub("^s__", "", species)
         ) %>%
-        rename(superkingdom = domain) %>%
         select(contig, superkingdom, phylum, class, order, family, genus, species)
       taxonomy_data <- rbind(taxonomy_data, gtdbtk_ar)
     } else {
