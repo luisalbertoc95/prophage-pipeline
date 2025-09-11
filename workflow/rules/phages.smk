@@ -46,7 +46,7 @@ rule bakta:
         os.path.join(config["outdir"], "benchmarks", "bakta", "{sample}_bmrk.txt")
     shell:
         """
-        bakta --db {input.db}/db --force --skip-plot --output {output} \
+        bakta --db {input.db}/db --force --skip-plot --keep-contig-headers --output {output} \
         --threads {threads} {input.contigs} 2> {log}
         """
 
