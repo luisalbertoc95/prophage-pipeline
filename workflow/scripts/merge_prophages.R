@@ -171,6 +171,7 @@ if ("mmseqs" %in% names(snakemake@input)) {
     
     if (nrow(gtdbtk_bac_joined) > 0) {
       gtdbtk_bac <- gtdbtk_bac_joined %>%
+        filter(!is.na(classification) & classification != "") %>%
         separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
         # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
         mutate(
@@ -205,6 +206,7 @@ if ("mmseqs" %in% names(snakemake@input)) {
     
     if (nrow(gtdbtk_ar_joined) > 0) {
       gtdbtk_ar <- gtdbtk_ar_joined %>%
+        filter(!is.na(classification) & classification != "") %>%
         separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
         # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
         mutate(
