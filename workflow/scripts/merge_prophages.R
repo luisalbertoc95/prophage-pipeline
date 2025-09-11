@@ -162,6 +162,16 @@ if ("mmseqs" %in% names(snakemake@input)) {
       select(contig, classification) %>%
       filter(!is.na(contig)) %>%
       separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
+      mutate(
+        domain = gsub("^d__", "", domain),
+        phylum = gsub("^p__", "", phylum),
+        class = gsub("^c__", "", class),
+        order = gsub("^o__", "", order),
+        family = gsub("^f__", "", family),
+        genus = gsub("^g__", "", genus),
+        species = gsub("^s__", "", species)
+      ) %>%
       rename(superkingdom = domain) %>%
       select(contig, superkingdom, phylum, class, order, family, genus, species)
     taxonomy_data <- rbind(taxonomy_data, gtdbtk_bac)
@@ -177,6 +187,16 @@ if ("mmseqs" %in% names(snakemake@input)) {
       select(contig, classification) %>%
       filter(!is.na(contig)) %>%
       separate_wider_delim(classification, ";", names=c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      # Remove GTDB prefixes (d__, p__, c__, o__, f__, g__, s__)
+      mutate(
+        domain = gsub("^d__", "", domain),
+        phylum = gsub("^p__", "", phylum),
+        class = gsub("^c__", "", class),
+        order = gsub("^o__", "", order),
+        family = gsub("^f__", "", family),
+        genus = gsub("^g__", "", genus),
+        species = gsub("^s__", "", species)
+      ) %>%
       rename(superkingdom = domain) %>%
       select(contig, superkingdom, phylum, class, order, family, genus, species)
     taxonomy_data <- rbind(taxonomy_data, gtdbtk_ar)
