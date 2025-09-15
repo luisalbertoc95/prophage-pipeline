@@ -14,10 +14,9 @@ check_overlap <- function(region1, region2) {
 genomad_path <- file.path(snakemake@input[["genomad"]], 
                                           "final_filtered_contigs_find_proviruses", 
                                           "final_filtered_contigs_provirus.tsv")
-# FIX: Use str_extract for consistency with PhiSpy approach
 genomad <- read_tsv(genomad_path) %>%
-  # Extract contig number using str_extract instead of extract()
-  mutate(contig = str_extract(source_seq, "(?<=NODE_)\\d+(?=_)")) %>%
+  # Extract contig number from format: NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_2333_length_43637_cov_146.0889
+  extract(source_seq, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
   as.data.frame() %>%
   select(contig, start, end) %>%
   mutate(tool = "genomad")
@@ -56,10 +55,7 @@ print(colnames(phispy))
 phispy_unique <- data.frame(matrix(ncol=4, nrow=0))
 cols <- c("contig", "start", "end", "tool")
 colnames(phispy_unique) <- cols
-# DEBUG: Check intersection before proceeding
 shared_contigs <- intersect(genomad$contig, phispy$contig)
-cat("DEBUG: Shared contigs found:", paste(shared_contigs, collapse=", "), "\n")
-cat("DEBUG: Number of shared contigs:", length(shared_contigs), "\n")
 
 # Get all phispy prophages on unique contigs
 for (row in 1:nrow(phispy)) {
@@ -112,8 +108,8 @@ if ("mmseqs" %in% names(snakemake@input)) {
   print(readLines(mmseqs_path, n = 3))
   
   taxonomy_data <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
-    # Extract contig number using str_extract for consistency
-    mutate(contig = str_extract(contig_full, "(?<=NODE_)\\d+(?=_)")) %>%
+    # Extract contig number from format: NovaSeq_N1028_metagenomics_I14076_FGT_Metagenomic_FRESH_41460_NODE_22_length_1060_cov_5.0000
+    extract(contig_full, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%  
     as.data.frame() %>%
     select(contig, lineage) %>%
     separate_wider_delim(lineage, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
@@ -143,10 +139,11 @@ if ("mmseqs" %in% names(snakemake@input)) {
         header_lines <- fasta_lines[grepl("^>", fasta_lines)]
         
         for (header in header_lines) {
-          # Extract contig number from header (NODE format) using str_extract for consistency
-          contig_match <- str_extract(header, "(?<=NODE_)\\d+(?=_)")
-          if (!is.na(contig_match)) {
-            bin_contig_map <- rbind(bin_contig_map, data.frame(bin_file = bin_name, contig = contig_match, stringsAsFactors = FALSE))
+          # Extract contig number from header (NODE format)
+          contig_match <- regmatches(header, regexpr("NODE_(\\d+)_", header, perl = TRUE))
+          if (length(contig_match) > 0) {
+            contig_num <- gsub("NODE_(\\d+)_", "\\1", contig_match, perl = TRUE)
+            bin_contig_map <- rbind(bin_contig_map, data.frame(bin_file = bin_name, contig = contig_num, stringsAsFactors = FALSE))
           }
         }
       }
