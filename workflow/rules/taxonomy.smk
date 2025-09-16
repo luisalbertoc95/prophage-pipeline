@@ -1,36 +1,3 @@
-rule create_gtdb_mmseqs_db:
-    input:
-        gtdbtk_db = config["gtdbtk_database"]
-    output:
-        directory(config["gtdb_mmseqs_database"])
-    conda: config["conda_envs"]["mmseqs"]
-    threads: 8
-    log:
-        os.path.join(config["outdir"], "logs", "gtdb_mmseqs_db_creation.log")
-    shell:
-        """
-        # Create GTDB-MMseqs database from GTDB-Tk database files
-        mkdir -p {output}
-        
-        # Find GTDB genome files (they should be in the GTDB-Tk database directory)
-        find {input.gtdbtk_db} -name "*.fna" -o -name "*.fa" -o -name "*.fasta" > {output}/genome_files.txt
-        
-        if [ ! -s {output}/genome_files.txt ]; then
-            echo "ERROR: No GTDB genome files found in {input.gtdbtk_db}" > {log}
-            echo "Please check GTDB-Tk database structure" >> {log}
-            exit 1
-        fi
-        
-        # Concatenate all GTDB genomes
-        cat $(cat {output}/genome_files.txt) > {output}/gtdb_genomes.fna
-        
-        # Create MMseqs database
-        mmseqs createdb {output}/gtdb_genomes.fna {output}/gtdb_mmseqs_db --threads {threads} 2> {log}
-        
-        # Create taxonomy database (this will need GTDB taxonomy mapping)
-        # For now, create basic database - we'll enhance with taxonomy later
-        echo "GTDB-MMseqs database created successfully" >> {log}
-        """
 
 rule mmseqs_taxonomy:
     input:
