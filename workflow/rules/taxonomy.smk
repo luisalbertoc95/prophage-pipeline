@@ -34,7 +34,8 @@ rule create_gtdb_mmseqs_db:
 
 rule mmseqs_taxonomy:
     input:
-        os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta")
+        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
+        prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv")
     params:
         db = config["mmseqs_database"]
     threads: 24
@@ -50,14 +51,27 @@ rule mmseqs_taxonomy:
         set -ue
         mkdir -p {output}
         
-        # Convert input contigs to mmseqs database format
-        mmseqs createdb {input} {output}/queryDB
+        # Extract list of prophage-containing contigs
+        awk 'NR>1 {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {output}/prophage_contigs.txt
         
-        # Run mmseqs taxonomy against your NR database
+        # Extract only prophage-containing contigs from the full contig set
+        seqkit grep -r -f {output}/prophage_contigs.txt {input.contigs} > {output}/prophage_contigs.fasta 2> {log}
+        
+        # Check if any contigs were extracted
+        if [ ! -s {output}/prophage_contigs.fasta ]; then
+            echo "No prophage-containing contigs found" > {log}
+            touch {output}/contig.taxonomy
+            exit 0
+        fi
+        
+        # Convert prophage contigs to mmseqs database format
+        mmseqs createdb {output}/prophage_contigs.fasta {output}/queryDB 2>> {log}
+        
+        # Run mmseqs taxonomy against NR database
         mmseqs taxonomy {output}/queryDB {params.db} {output}/taxonomyResult {output}/tmp \
         --search-type 3 --tax-lineage 1 \
         --lca-ranks superkingdom,phylum,class,order,family,genus,species \
-        --threads {threads} 2> {log}
+        --threads {threads} 2>> {log}
         
         # Convert results to TSV format
         mmseqs createtsv {output}/queryDB {output}/taxonomyResult {output}/contig.taxonomy 2>> {log}
