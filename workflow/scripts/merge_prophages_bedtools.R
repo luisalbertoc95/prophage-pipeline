@@ -34,24 +34,51 @@ if (file.exists(snakemake@input[["phispy_unique_ids"]]) &&
   if (file.exists(fasta_path)) {
     fasta <- readDNAStringSet(fasta_path)
     cat("Total PhiSpy sequences available:", length(fasta), "\n")
-    cat("FASTA sequence names:", paste(names(fasta)[1:min(5, length(fasta))], collapse=", "), "...\n")
+    cat("FASTA sequence names (first 3):", paste(names(fasta)[1:min(3, length(fasta))], collapse=", "), "...\n")
     
-    # Match by sequence name (robust approach)
-    unique_pp_names <- paste0("pp_", unique_ids)
-    cat("Looking for sequences named:", paste(unique_pp_names, collapse=", "), "\n")
+    # Get unique PhiSpy bed entries to match by contig and coordinates
+    unique_bed <- merged_bed %>% filter(tool == "phispy")
+    cat("Unique PhiSpy predictions to extract:", nrow(unique_bed), "\n")
     
-    # Find matching sequences
-    matches <- which(names(fasta) %in% unique_pp_names)
-    cat("Found", length(matches), "matching sequences\n")
+    # Match FASTA sequences by contig number (more robust than pp numbers)
+    matched_sequences <- DNAStringSet()
+    for (i in 1:nrow(unique_bed)) {
+      contig_num <- unique_bed$contig[i]
+      start_coord <- unique_bed$start[i]
+      end_coord <- unique_bed$end[i]
+      
+      # Look for FASTA headers containing this contig number
+      pattern <- paste0("NODE_", contig_num, "_")
+      matching_idx <- grep(pattern, names(fasta))
+      
+      if (length(matching_idx) > 0) {
+        # If multiple matches, try to find one with matching coordinates
+        coord_pattern <- paste0("_", start_coord, "_", end_coord)
+        coord_matches <- grep(coord_pattern, names(fasta)[matching_idx])
+        
+        if (length(coord_matches) > 0) {
+          # Found exact coordinate match
+          final_idx <- matching_idx[coord_matches[1]]
+          matched_sequences <- c(matched_sequences, fasta[final_idx])
+          cat("Matched contig", contig_num, "with coordinates", start_coord, "-", end_coord, "\n")
+        } else {
+          # Take first contig match (coordinates might be slightly different)
+          final_idx <- matching_idx[1]
+          matched_sequences <- c(matched_sequences, fasta[final_idx])
+          cat("Matched contig", contig_num, "(coordinates may differ)\n")
+        }
+      } else {
+        cat("Warning: No FASTA sequence found for contig", contig_num, "\n")
+      }
+    }
     
-    if (length(matches) > 0) {
-      fasta_unique <- fasta[matches]
-      writeXStringSet(fasta_unique, filepath=snakemake@output[["fasta"]])
-      cat("Successfully wrote", length(fasta_unique), "unique PhiSpy sequences to FASTA\n")
+    if (length(matched_sequences) > 0) {
+      writeXStringSet(matched_sequences, filepath=snakemake@output[["fasta"]])
+      cat("Successfully wrote", length(matched_sequences), "unique PhiSpy sequences to FASTA\n")
     } else {
-      # Create empty FASTA if no unique sequences
+      # Create empty FASTA if no sequences found
       writeXStringSet(DNAStringSet(), filepath=snakemake@output[["fasta"]])
-      cat("No unique PhiSpy sequences found - wrote empty FASTA\n")
+      cat("No matching PhiSpy sequences found - wrote empty FASTA\n")
     }
   } else {
     stop("PhiSpy FASTA file not found: ", fasta_path)

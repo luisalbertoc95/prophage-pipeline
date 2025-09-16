@@ -147,16 +147,26 @@ rule phage_all:
 rule final_prophage_output:
     input:
         genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
-        unique_phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta")
+        unique_phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
+        prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
+        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta")
     output:
-        os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta")
+        final_prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
+        contigs_with_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "contigs_with_prophages.fasta")
     shell:
         """
+        # Create final prophage sequences (extracted prophages only)
         cp {input.genomad}/final_filtered_contigs_find_proviruses/final_filtered_contigs_provirus.fna \
         {config[outdir]}/{wildcards.sample}/phage_analysis/genomad_prophage.fasta
 
         cat {input.genomad}/final_filtered_contigs_find_proviruses/final_filtered_contigs_provirus.fna \
-        {input.unique_phispy} > {output}
+        {input.unique_phispy} > {output.final_prophage}
+
+        # Create full contigs containing prophages
+        awk 'NR>1 {{print $1}}' {input.prophage_table} | sort -u > {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt
+        
+        seqkit grep -f {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt \
+        {input.contigs} > {output.contigs_with_prophages}
         """
 
 rule checkv_db:
@@ -193,7 +203,8 @@ rule run_everything:
         coverm_stats = os.path.join(config["outdir"], "{sample}", "coverm", "{sample}_stats.txt"),
         checkm = os.path.join(config["outdir"], "{sample}", "binning", "checkm"),
         checkv = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv"),
-        prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta")
+        prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
+        contigs_with_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "contigs_with_prophages.fasta")
     output:
         os.path.join(config["outdir"], "{sample}", "phage_analysis", "done")
     shell:

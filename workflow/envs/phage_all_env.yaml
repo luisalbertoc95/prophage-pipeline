@@ -12,3 +12,4 @@ dependencies:
   - bioconductor-zlibbioc=1.40.0
   - r-essentials
   - bedtools
+  - seqkit
