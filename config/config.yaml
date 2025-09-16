@@ -9,11 +9,12 @@ human_ref: "/ref/sahlab/data/GRCh38.fna.gz"
 genomad_database: "/ref/sahlab/data/viral_analysis_DBs/genomad_DBs/genomad_db"
 bakta_database: "/ref/sahlab/data/bakta_db"
 # cat_database: "/ref/sahlab/data/CAT_prepare_20210107"
-mmseqs_database: "/ref/sahlab/data/nr/nr_mmseqs15_DB"
+mmseqs_database: "/ref/sahlab/data/gtdb_mmseqs_db/gtdb_mmseqs_db"
 gtdbtk_database: "/ref/sahlab/data/gtdb_release226"
+gtdb_mmseqs_database: "/ref/sahlab/data/gtdb_mmseqs_db"
 checkv_database: "/ref/sahlab/data/viral_analysis_DBs/checkV_DB/checkv-db-v1.4"
 
-# Taxonomy method selection: "mmseqs_nr" or "gtdbtk"
+# Taxonomy method selection: "mmseqs" or "gtdbtk"  
 taxonomy_method: "gtdbtk"
 
 # Conda environments
