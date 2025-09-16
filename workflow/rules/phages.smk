@@ -163,7 +163,7 @@ rule final_prophage_output:
         {input.unique_phispy} > {output.final_prophage}
 
         # Create full contigs containing prophages
-        awk 'NR>1 {{print $1}}' {input.prophage_table} | sort -u > {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt
+        awk 'NR>1 {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt
         
         seqkit grep -f {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt \
         {input.contigs} > {output.contigs_with_prophages}
