@@ -89,134 +89,144 @@ if (file.exists(snakemake@input[["phispy_unique_ids"]]) &&
   cat("No unique PhiSpy sequences - wrote empty FASTA\n")
 }
 
-# Get taxonomy data (keep existing complex logic)
-cat("\n3. Processing taxonomy data...\n")
-if ("mmseqs" %in% names(snakemake@input)) {
-  cat("Using MMseqs2 taxonomy...\n")
-  # MMseqs2 taxonomy parsing
-  mmseqs_path <- file.path(snakemake@input[["taxonomy"]], "contig.taxonomy")
+# Get taxonomy data using hybrid approach (GTDB-Tk + MMseqs)
+cat("\n3. Processing taxonomy data with hybrid approach...\n")
+
+# Helper function to create bin-to-contig mapping from FASTA files
+create_bin_contig_mapping <- function(genomes_dir) {
+  bin_contig_map <- data.frame(bin_file = character(), contig = character(), stringsAsFactors = FALSE)
   
-  if (file.exists(mmseqs_path)) {
-    taxonomy_data <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
-      # Extract contig number using str_extract for consistency
-      mutate(contig = str_extract(contig_full, "(?<=NODE_)\\d+(?=_)")) %>%
-      filter(!is.na(contig)) %>%
-      select(contig, lineage) %>%
-      separate_wider_delim(lineage, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
-      select(contig, superkingdom, phylum, class, order, family, genus, species)
+  if (dir.exists(genomes_dir)) {
+    bin_files <- list.files(genomes_dir, pattern = "\\.fa$", full.names = TRUE)
     
-    cat("MMseqs2 taxonomy loaded:", nrow(taxonomy_data), "records\n")
-  } else {
-    cat("Warning: MMseqs2 taxonomy file not found, creating empty taxonomy\n")
-    taxonomy_data <- data.frame(contig = character(), superkingdom = character(), phylum = character(), 
-                               class = character(), order = character(), family = character(), 
-                               genus = character(), species = character())
-  }
-  
-} else if ("gtdbtk" %in% names(snakemake@input)) {
-  cat("Using GTDB-Tk taxonomy...\n")
-  # GTDB-Tk bin-level taxonomy parsing (keep existing complex logic)
-  gtdbtk_path <- file.path(snakemake@input[["taxonomy"]], "gtdbtk.bac120.summary.tsv")
-  gtdbtk_ar_path <- file.path(snakemake@input[["taxonomy"]], "gtdbtk.ar53.summary.tsv")
-  gtdbtk_genomes_dir <- file.path(snakemake@input[["taxonomy"]], "genomes")
-  
-  # Function to create bin-to-contig mapping from FASTA files
-  create_bin_contig_mapping <- function(genomes_dir) {
-    bin_contig_map <- data.frame(bin_file = character(), contig = character(), stringsAsFactors = FALSE)
-    
-    if (dir.exists(genomes_dir)) {
-      bin_files <- list.files(genomes_dir, pattern = "\\.fa$", full.names = TRUE)
-      
-      for (bin_file in bin_files) {
-        bin_name <- basename(bin_file)
-        if (file.exists(bin_file) && file.size(bin_file) > 0) {
-          fasta_lines <- readLines(bin_file)
-          header_lines <- fasta_lines[grepl("^>", fasta_lines)]
-          
-          for (header in header_lines) {
-            # Extract contig number from header (NODE format)
-            contig_match <- str_extract(header, "(?<=NODE_)\\d+(?=_)")
-            if (!is.na(contig_match)) {
-              bin_contig_map <- rbind(bin_contig_map, data.frame(bin_file = bin_name, contig = contig_match, stringsAsFactors = FALSE))
-            }
+    for (bin_file in bin_files) {
+      bin_name <- basename(bin_file)
+      if (file.exists(bin_file) && file.size(bin_file) > 0) {
+        fasta_lines <- readLines(bin_file)
+        header_lines <- fasta_lines[grepl("^>", fasta_lines)]
+        
+        for (header in header_lines) {
+          # Extract contig number from header (NODE format)
+          contig_match <- str_extract(header, "(?<=NODE_)\\d+(?=_)")
+          if (!is.na(contig_match)) {
+            bin_contig_map <- rbind(bin_contig_map, data.frame(bin_file = bin_name, contig = contig_match, stringsAsFactors = FALSE))
           }
         }
       }
     }
-    return(bin_contig_map)
   }
+  return(bin_contig_map)
+}
+
+# Load GTDB-Tk taxonomy (for binned contigs)
+gtdbtk_taxonomy <- data.frame()
+if ("gtdbtk" %in% names(snakemake@input)) {
+  cat("Loading GTDB-Tk taxonomy for binned contigs...\n")
+  gtdbtk_path <- file.path(snakemake@input[["gtdbtk"]], "gtdbtk.bac120.summary.tsv")
+  gtdbtk_ar_path <- file.path(snakemake@input[["gtdbtk"]], "gtdbtk.ar53.summary.tsv")
+  gtdbtk_genomes_dir <- file.path(snakemake@input[["gtdbtk"]], "genomes")
   
-  # Create mapping from bins to contigs
+  # Create bin-to-contig mapping
   bin_contig_mapping <- create_bin_contig_mapping(gtdbtk_genomes_dir)
   cat("Created bin-to-contig mapping with", nrow(bin_contig_mapping), "entries\n")
   
-  taxonomy_data <- data.frame()
-  
-  # Read bacterial taxonomy if file exists
+  # Read bacterial taxonomy
   if (file.exists(gtdbtk_path) && file.size(gtdbtk_path) > 0) {
-    gtdbtk_bac_joined <- read_tsv(gtdbtk_path, show_col_types = FALSE) %>%
+    gtdbtk_bac <- read_tsv(gtdbtk_path, show_col_types = FALSE) %>%
       select(user_genome, classification) %>%
       mutate(user_genome_fa = paste0(user_genome, ".fa")) %>%
       left_join(bin_contig_mapping, by = c("user_genome_fa" = "bin_file")) %>%
       select(contig, classification) %>%
-      filter(!is.na(contig) & !is.na(classification) & classification != "")
+      filter(!is.na(contig) & !is.na(classification) & classification != "") %>%
+      separate_wider_delim(classification, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      mutate(
+        superkingdom = gsub("^d__", "", superkingdom),
+        phylum = gsub("^p__", "", phylum),
+        class = gsub("^c__", "", class),
+        order = gsub("^o__", "", order),
+        family = gsub("^f__", "", family),
+        genus = gsub("^g__", "", genus),
+        species = gsub("^s__", "", species),
+        source = "gtdbtk"
+      ) %>%
+      select(contig, superkingdom, phylum, class, order, family, genus, species, source)
     
-    cat("Found", nrow(gtdbtk_bac_joined), "bacterial classifications with matching contigs\n")
-    
-    if (nrow(gtdbtk_bac_joined) > 0) {
-      gtdbtk_bac <- gtdbtk_bac_joined %>%
-        separate_wider_delim(classification, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
-        # Remove GTDB prefixes
-        mutate(
-          superkingdom = gsub("^d__", "", superkingdom),
-          phylum = gsub("^p__", "", phylum),
-          class = gsub("^c__", "", class),
-          order = gsub("^o__", "", order),
-          family = gsub("^f__", "", family),
-          genus = gsub("^g__", "", genus),
-          species = gsub("^s__", "", species)
-        ) %>%
-        select(contig, superkingdom, phylum, class, order, family, genus, species)
-      taxonomy_data <- rbind(taxonomy_data, gtdbtk_bac)
-    }
+    gtdbtk_taxonomy <- rbind(gtdbtk_taxonomy, gtdbtk_bac)
+    cat("Loaded", nrow(gtdbtk_bac), "bacterial classifications\n")
   }
   
-  # Read archaeal taxonomy if file exists
+  # Read archaeal taxonomy
   if (file.exists(gtdbtk_ar_path) && file.size(gtdbtk_ar_path) > 0) {
-    gtdbtk_ar_joined <- read_tsv(gtdbtk_ar_path, show_col_types = FALSE) %>%
+    gtdbtk_ar <- read_tsv(gtdbtk_ar_path, show_col_types = FALSE) %>%
       select(user_genome, classification) %>%
       mutate(user_genome_fa = paste0(user_genome, ".fa")) %>%
       left_join(bin_contig_mapping, by = c("user_genome_fa" = "bin_file")) %>%
       select(contig, classification) %>%
-      filter(!is.na(contig) & !is.na(classification) & classification != "")
+      filter(!is.na(contig) & !is.na(classification) & classification != "") %>%
+      separate_wider_delim(classification, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      mutate(
+        superkingdom = gsub("^d__", "", superkingdom),
+        phylum = gsub("^p__", "", phylum),
+        class = gsub("^c__", "", class),
+        order = gsub("^o__", "", order),
+        family = gsub("^f__", "", family),
+        genus = gsub("^g__", "", genus),
+        species = gsub("^s__", "", species),
+        source = "gtdbtk"
+      ) %>%
+      select(contig, superkingdom, phylum, class, order, family, genus, species, source)
     
-    cat("Found", nrow(gtdbtk_ar_joined), "archaeal classifications with matching contigs\n")
-    
-    if (nrow(gtdbtk_ar_joined) > 0) {
-      gtdbtk_ar <- gtdbtk_ar_joined %>%
-        separate_wider_delim(classification, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
-        # Remove GTDB prefixes
-        mutate(
-          superkingdom = gsub("^d__", "", superkingdom),
-          phylum = gsub("^p__", "", phylum),
-          class = gsub("^c__", "", class),
-          order = gsub("^o__", "", order),
-          family = gsub("^f__", "", family),
-          genus = gsub("^g__", "", genus),
-          species = gsub("^s__", "", species)
-        ) %>%
-        select(contig, superkingdom, phylum, class, order, family, genus, species)
-      taxonomy_data <- rbind(taxonomy_data, gtdbtk_ar)
-    }
+    gtdbtk_taxonomy <- rbind(gtdbtk_taxonomy, gtdbtk_ar)
+    cat("Loaded", nrow(gtdbtk_ar), "archaeal classifications\n")
   }
-  
-  cat("GTDB-Tk taxonomy loaded:", nrow(taxonomy_data), "records\n")
-} else {
-  cat("Warning: No taxonomy method specified, creating empty taxonomy\n")
-  taxonomy_data <- data.frame(contig = character(), superkingdom = character(), phylum = character(), 
-                             class = character(), order = character(), family = character(), 
-                             genus = character(), species = character())
 }
+
+cat("Total GTDB-Tk taxonomy records:", nrow(gtdbtk_taxonomy), "\n")
+
+# Load MMseqs taxonomy (for unbinned contigs)
+mmseqs_taxonomy <- data.frame()
+if ("mmseqs" %in% names(snakemake@input)) {
+  cat("Loading MMseqs taxonomy for unbinned contigs...\n")
+  mmseqs_path <- file.path(snakemake@input[["mmseqs"]], "contig.taxonomy")
+  
+  if (file.exists(mmseqs_path) && file.size(mmseqs_path) > 0) {
+    mmseqs_taxonomy <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
+      mutate(contig = str_extract(contig_full, "(?<=NODE_)\\d+(?=_)")) %>%
+      filter(!is.na(contig)) %>%
+      select(contig, lineage) %>%
+      separate_wider_delim(lineage, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      mutate(source = "mmseqs") %>%
+      select(contig, superkingdom, phylum, class, order, family, genus, species, source)
+    
+    cat("Loaded", nrow(mmseqs_taxonomy), "MMseqs taxonomy records\n")
+  } else {
+    cat("MMseqs taxonomy file not found or empty\n")
+  }
+}
+
+# Merge taxonomies with GTDB-Tk priority
+cat("Merging taxonomies (GTDB-Tk priority for binned contigs)...\n")
+taxonomy_data <- gtdbtk_taxonomy %>%
+  full_join(mmseqs_taxonomy, by = "contig", suffix = c("_gtdb", "_mmseqs")) %>%
+  mutate(
+    # GTDB-Tk takes priority, MMseqs fills gaps
+    superkingdom = coalesce(superkingdom_gtdb, superkingdom_mmseqs),
+    phylum = coalesce(phylum_gtdb, phylum_mmseqs),
+    class = coalesce(class_gtdb, class_mmseqs),
+    order = coalesce(order_gtdb, order_mmseqs),
+    family = coalesce(family_gtdb, family_mmseqs),
+    genus = coalesce(genus_gtdb, genus_mmseqs),
+    species = coalesce(species_gtdb, species_mmseqs),
+    source = coalesce(source_gtdb, source_mmseqs)
+  ) %>%
+  select(contig, superkingdom, phylum, class, order, family, genus, species, source)
+
+cat("Final hybrid taxonomy:", nrow(taxonomy_data), "records\n")
+cat("From GTDB-Tk:", sum(taxonomy_data$source == "gtdbtk", na.rm = TRUE), "contigs\n")
+cat("From MMseqs:", sum(taxonomy_data$source == "mmseqs", na.rm = TRUE), "contigs\n")
+
+# Remove source column for final output (keep compatibility)
+taxonomy_data <- taxonomy_data %>% select(-source)
 
 # Create output tables
 cat("\n4. Creating output tables...\n")

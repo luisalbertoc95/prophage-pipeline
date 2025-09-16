@@ -74,13 +74,11 @@ def get_taxonomy_input(wildcards):
 def get_phage_all_input(wildcards):
     inputs = {
         "genomad": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
-        "phispy": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy")
+        "phispy": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy"),
+        # Include both taxonomy sources for hybrid approach
+        "gtdbtk": os.path.join(config["outdir"], wildcards.sample, "taxonomy", "gtdbtk"),
+        "mmseqs": os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
     }
-    
-    if config["taxonomy_method"] == "mmseqs":
-        inputs["mmseqs"] = get_taxonomy_input(wildcards)
-    elif config["taxonomy_method"] == "gtdbtk":
-        inputs["gtdbtk"] = get_taxonomy_input(wildcards)
     
     return inputs
 
