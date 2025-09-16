@@ -165,7 +165,7 @@ rule final_prophage_output:
         # Create full contigs containing prophages
         awk 'NR>1 {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt
         
-        seqkit grep -f {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt \
+        seqkit grep -r -f {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt \
         {input.contigs} > {output.contigs_with_prophages}
         """
 
