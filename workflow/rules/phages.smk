@@ -77,16 +77,63 @@ def get_phage_all_input(wildcards):
         "phispy": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy")
     }
     
-    if config["taxonomy_method"] == "mmseqs_nr":
+    if config["taxonomy_method"] == "mmseqs":
         inputs["mmseqs"] = get_taxonomy_input(wildcards)
     elif config["taxonomy_method"] == "gtdbtk":
         inputs["gtdbtk"] = get_taxonomy_input(wildcards)
     
     return inputs
 
-rule phage_all:
+rule prophage_overlap_detection:
     input:
         unpack(get_phage_all_input)
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "merged_prophages.bed"),
+        phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy_unique_ids.txt")
+    log:
+        os.path.join(config["outdir"], "logs", "prophage_overlap", "{sample}.log")
+    shell:
+        """
+        # Create BED files from both tools
+        # GeNomad: extract contig, start, end from TSV
+        awk 'NR>1 {{
+            # Extract NODE number from source_seq column (column 2)
+            if (match($2, /NODE_([0-9]+)_/, arr)) {{
+                print arr[1] "\t" $3 "\t" $4 "\tgenomad\t" NR-1
+            }}
+        }}' {input.genomad}/final_filtered_contigs_find_proviruses/final_filtered_contigs_provirus.tsv > {config[outdir]}/{wildcards.sample}/phage_analysis/genomad.bed 2> {log}
+        
+        # PhiSpy: extract contig, start, end from TSV  
+        awk 'NR>1 {{
+            # Extract NODE number from Contig column (column 2)
+            if (match($2, /NODE_([0-9]+)_/, arr)) {{
+                # Split prophage number (pp_X) to get index
+                split($1, pp_parts, "_")
+                print arr[1] "\t" $3 "\t" $4 "\tphispy\t" pp_parts[2]
+            }}
+        }}' {input.phispy}/prophage.tsv > {config[outdir]}/{wildcards.sample}/phage_analysis/phispy.bed 2>> {log}
+        
+        # Find PhiSpy predictions that DON'T overlap with geNomad (use -v flag)
+        bedtools intersect -a {config[outdir]}/{wildcards.sample}/phage_analysis/phispy.bed \
+                          -b {config[outdir]}/{wildcards.sample}/phage_analysis/genomad.bed \
+                          -v > {config[outdir]}/{wildcards.sample}/phage_analysis/phispy_unique.bed 2>> {log}
+        
+        # Create merged BED: all geNomad + unique PhiSpy
+        cat {config[outdir]}/{wildcards.sample}/phage_analysis/genomad.bed \
+            {config[outdir]}/{wildcards.sample}/phage_analysis/phispy_unique.bed > {output.merged_bed} 2>> {log}
+        
+        # Extract PhiSpy unique IDs for FASTA extraction
+        awk '{{print $5}}' {config[outdir]}/{wildcards.sample}/phage_analysis/phispy_unique.bed > {output.phispy_unique_ids} 2>> {log}
+        """
+
+rule phage_all:
+    input:
+        merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "merged_prophages.bed"),
+        phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy_unique_ids.txt"),
+        genomad = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
+        phispy = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy"),
+        taxonomy = get_taxonomy_input
     conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
@@ -95,7 +142,7 @@ rule phage_all:
     log:
         os.path.join(config["outdir"], "logs", "phage_all", "{sample}.log")
     script:
-        "../scripts/merge_prophages.R"
+        "../scripts/merge_prophages_bedtools.R"
 
 rule final_prophage_output:
     input:
