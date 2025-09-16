@@ -75,9 +75,7 @@ def get_phage_all_input(wildcards):
     inputs = {
         "genomad": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
         "phispy": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy"),
-        # Include both taxonomy sources for hybrid approach
-        "gtdbtk": os.path.join(config["outdir"], wildcards.sample, "taxonomy", "gtdbtk"),
-        "mmseqs": os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
+        "mmseqs": get_taxonomy_input(wildcards)
     }
     
     return inputs
