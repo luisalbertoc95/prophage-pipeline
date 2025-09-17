@@ -106,6 +106,18 @@ if ("taxonomy" %in% names(snakemake@input)) {
       select(contig, superkingdom, phylum, class, order, family, genus, species)
     
     cat("MMseqs taxonomy loaded:", nrow(taxonomy_data), "records\n")
+    cat("Unique contigs in taxonomy:", length(unique(taxonomy_data$contig)), "\n")
+    
+    # Show taxonomy summary
+    tax_summary <- taxonomy_data %>%
+      summarise(
+        total_contigs = n(),
+        with_superkingdom = sum(!is.na(superkingdom) & superkingdom != "unknown"),
+        with_species = sum(!is.na(species) & species != "unknown" & !str_detect(species, "^uc_"))
+      )
+    cat("Taxonomy summary: ", tax_summary$total_contigs, " contigs,", 
+        tax_summary$with_superkingdom, " with superkingdom,", 
+        tax_summary$with_species, " with species\n")
   } else {
     cat("Warning: MMseqs taxonomy file not found, creating empty taxonomy\n")
     taxonomy_data <- data.frame(contig = character(), superkingdom = character(), phylum = character(), 
@@ -135,7 +147,20 @@ final_prophage_table_tax <- final_prophage_table %>%
   left_join(taxonomy_data %>% mutate(contig = as.character(contig)), by = 'contig')
 
 cat("Final prophage table with taxonomy:", nrow(final_prophage_table_tax), "prophages\n")
-cat("Prophages with taxonomy:", sum(!is.na(final_prophage_table_tax$superkingdom)), "of", nrow(final_prophage_table_tax), "\n")
+cat("Prophages with taxonomy:", sum(!is.na(final_prophage_table_tax$superkingdom) & final_prophage_table_tax$superkingdom != "unknown"), "of", nrow(final_prophage_table_tax), "\n")
+
+# Show breakdown by tool
+tool_summary <- final_prophage_table_tax %>%
+  group_by(tool) %>%
+  summarise(
+    total = n(),
+    with_taxonomy = sum(!is.na(superkingdom) & superkingdom != "unknown"),
+    .groups = 'drop'
+  )
+cat("Taxonomy by tool:\n")
+for(i in 1:nrow(tool_summary)) {
+  cat("  ", tool_summary$tool[i], ":", tool_summary$with_taxonomy[i], "/", tool_summary$total[i], "\n")
+}
 
 # Write output files
 write.table(final_prophage_table, snakemake@output[["table"]], row.names=FALSE, sep="\t", quote=FALSE)

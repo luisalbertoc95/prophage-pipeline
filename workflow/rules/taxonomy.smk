@@ -4,7 +4,8 @@ rule mmseqs_taxonomy:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
         prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv")
     params:
-        db = config["mmseqs_database"]
+        db = config["mmseqs_database"],
+        taxonomy_scope = config.get("taxonomy_scope", "prophage_only")
     threads: 24
     conda: config["conda_envs"]["mmseqs"]
     output:
@@ -18,21 +19,28 @@ rule mmseqs_taxonomy:
         set -ue
         mkdir -p {output}
         
-        # Extract list of prophage-containing contigs
-        awk 'NR>1 {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {output}/prophage_contigs.txt
+        if [ "{params.taxonomy_scope}" = "all_contigs" ]; then
+            echo "Running taxonomy on ALL contigs (comprehensive mode)" > {log}
+            # Use all contigs for taxonomy
+            cp {input.contigs} {output}/contigs_for_taxonomy.fasta
+        else
+            echo "Running taxonomy on prophage-containing contigs only (targeted mode)" > {log}
+            # Extract list of prophage-containing contigs
+            awk 'NR>1 {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {output}/prophage_contigs.txt
+            
+            # Extract only prophage-containing contigs from the full contig set
+            seqkit grep -r -f {output}/prophage_contigs.txt {input.contigs} > {output}/contigs_for_taxonomy.fasta 2>> {log}
+        fi
         
-        # Extract only prophage-containing contigs from the full contig set
-        seqkit grep -r -f {output}/prophage_contigs.txt {input.contigs} > {output}/prophage_contigs.fasta 2> {log}
-        
-        # Check if any contigs were extracted
-        if [ ! -s {output}/prophage_contigs.fasta ]; then
-            echo "No prophage-containing contigs found" > {log}
+        # Check if any contigs were extracted/available
+        if [ ! -s {output}/contigs_for_taxonomy.fasta ]; then
+            echo "No contigs found for taxonomy analysis" >> {log}
             touch {output}/contig.taxonomy
             exit 0
         fi
         
-        # Convert prophage contigs to mmseqs database format
-        mmseqs createdb {output}/prophage_contigs.fasta {output}/queryDB 2>> {log}
+        # Convert contigs to mmseqs database format
+        mmseqs createdb {output}/contigs_for_taxonomy.fasta {output}/queryDB 2>> {log}
         
         # Run mmseqs taxonomy against NR database
         mmseqs taxonomy {output}/queryDB {params.db} {output}/taxonomyResult {output}/tmp \
