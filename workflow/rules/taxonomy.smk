@@ -1,4 +1,10 @@
 
+# Rule priority based on configuration
+if config.get("taxonomy_scope", "prophage_only") == "all_contigs":
+    ruleorder: mmseqs_taxonomy_all_contigs > mmseqs_taxonomy_prophage_only
+else:
+    ruleorder: mmseqs_taxonomy_prophage_only > mmseqs_taxonomy_all_contigs
+
 rule mmseqs_taxonomy_all_contigs:
     input:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta")
