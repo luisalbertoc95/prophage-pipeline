@@ -92,7 +92,8 @@ def get_phage_all_input(wildcards):
 
 rule prophage_overlap_detection:
     input:
-        unpack(get_phage_all_input)
+        genomad = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
+        phispy = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy")
     conda: config["conda_envs"]["phage_all"]
     output:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "merged_prophages.bed"),
