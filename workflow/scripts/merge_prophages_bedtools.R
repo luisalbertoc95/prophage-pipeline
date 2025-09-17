@@ -98,8 +98,8 @@ if ("mmseqs" %in% names(snakemake@input)) {
   
   if (file.exists(mmseqs_path)) {
     taxonomy_data <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
-      # Extract contig number using str_extract for consistency
-      mutate(contig = str_extract(contig_full, "(?<=NODE_)\\d+(?=_)")) %>%
+      # Extract contig number using extract() - revert to working method
+      extract(contig_full, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
       filter(!is.na(contig)) %>%
       select(contig, lineage) %>%
       separate_wider_delim(lineage, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
