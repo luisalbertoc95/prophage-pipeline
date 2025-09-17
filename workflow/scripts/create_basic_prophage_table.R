@@ -92,21 +92,41 @@ if (file.exists(snakemake@input[["phispy_unique_ids"]]) &&
 # Read binning information
 cat("\n3. Reading binning information...\n")
 sample_name <- basename(dirname(dirname(snakemake@output[["table"]])))
-scaffolds2bin_path <- file.path(dirname(dirname(dirname(snakemake@output[["table"]]))), "binning", "dastool", paste0(sample_name, "_DASTool_scaffolds2bin.txt"))
 
 bin_mapping <- data.frame(contig = character(), bin = character())
-if (file.exists(scaffolds2bin_path)) {
+
+# Try different possible DAS Tool output file patterns
+dastool_dir <- file.path(dirname(dirname(dirname(snakemake@output[["table"]]))), "binning", "dastool")
+possible_files <- c(
+  file.path(dastool_dir, paste0(sample_name, "_DASTool_scaffolds2bin.txt")),
+  file.path(dastool_dir, paste0(sample_name, "_scaffolds2bin.txt")),
+  file.path(dastool_dir, "scaffolds2bin.txt")
+)
+
+scaffolds2bin_path <- NULL
+for (path in possible_files) {
+  if (file.exists(path)) {
+    scaffolds2bin_path <- path
+    break
+  }
+}
+
+if (!is.null(scaffolds2bin_path)) {
   bin_mapping <- read_tsv(scaffolds2bin_path, col_names = c("contig_full", "bin"), col_types = cols()) %>%
     # Extract contig number from full contig name (e.g., NODE_1662_length_43637_cov_146.0889 -> 1662)
     mutate(contig = str_extract(contig_full, "(?<=NODE_)\\d+(?=_)")) %>%
     filter(!is.na(contig)) %>%
     select(contig, bin)
   
+  cat("Binning information loaded from:", scaffolds2bin_path, "\n")
   cat("Binning information loaded:", nrow(bin_mapping), "contigs in bins\n")
   cat("Number of bins found:", length(unique(bin_mapping$bin)), "\n")
   cat("Sample bins:", paste(unique(bin_mapping$bin)[1:min(5, length(unique(bin_mapping$bin)))], collapse=", "), "\n")
 } else {
-  cat("Warning: DAS Tool scaffolds2bin file not found at:", scaffolds2bin_path, "\n")
+  cat("Warning: No DAS Tool scaffolds2bin file found. Tried:\n")
+  for (path in possible_files) {
+    cat("  -", path, "\n")
+  }
   cat("Proceeding without binning information - all contigs will be marked as 'none'\n")
 }
 
@@ -124,9 +144,8 @@ cat("Prophages unbinned:", sum(final_prophage_table$bin == "none"), "of", nrow(f
 
 # Show breakdown by tool and binning status
 bin_tool_summary <- final_prophage_table %>%
-  group_by(tool, bin != "none") %>%
-  summarise(count = n(), .groups = 'drop') %>%
-  rename(is_binned = 2)
+  group_by(tool, is_binned = bin != "none") %>%
+  summarise(count = n(), .groups = 'drop')
 cat("Prophage distribution by tool and binning status:\n")
 print(bin_tool_summary)
 
