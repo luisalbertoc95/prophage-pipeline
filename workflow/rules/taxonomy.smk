@@ -34,8 +34,11 @@ rule mmseqs_taxonomy:
             cp {input.contigs} {output}/contigs_for_taxonomy.fasta
         else
             echo "Running taxonomy on prophage-containing contigs only (targeted mode)" > {log}
+            # Find the prophage table file dynamically (avoid {input.prophage_table} placeholder)
+            prophage_table_file="$(dirname {output})/../../phage_analysis/final_prophage_table.tsv"
+            
             # Extract list of prophage-containing contigs
-            awk 'NR>1 {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {output}/prophage_contigs.txt
+            awk 'NR>1 {{print "NODE_" $1 "_"}}' "$prophage_table_file" | sort -u > {output}/prophage_contigs.txt
             
             # Extract only prophage-containing contigs from the full contig set
             seqkit grep -r -f {output}/prophage_contigs.txt {input.contigs} > {output}/contigs_for_taxonomy.fasta 2>> {log}
