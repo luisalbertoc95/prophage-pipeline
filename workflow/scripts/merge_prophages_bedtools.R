@@ -91,10 +91,10 @@ if (file.exists(snakemake@input[["phispy_unique_ids"]]) &&
 
 # Get taxonomy data (MMseqs only)
 cat("\n3. Processing taxonomy data...\n")
-if ("mmseqs" %in% names(snakemake@input)) {
+if ("taxonomy" %in% names(snakemake@input)) {
   cat("Using MMseqs taxonomy...\n")
   # MMseqs taxonomy parsing
-  mmseqs_path <- file.path(snakemake@input[["mmseqs"]], "contig.taxonomy")
+  mmseqs_path <- file.path(snakemake@input[["taxonomy"]], "contig.taxonomy")
   
   if (file.exists(mmseqs_path)) {
     taxonomy_data <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
