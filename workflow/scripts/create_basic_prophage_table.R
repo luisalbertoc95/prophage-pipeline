@@ -89,47 +89,58 @@ if (file.exists(snakemake@input[["phispy_unique_ids"]]) &&
   cat("No unique PhiSpy sequences - wrote empty FASTA\n")
 }
 
-# Read binning information
-cat("\n3. Reading binning information...\n")
+# Read binning information from final DAS Tool bins
+cat("\n3. Reading binning information from final DAS Tool bins...\n")
 sample_name <- basename(dirname(dirname(snakemake@output[["table"]])))
 
 bin_mapping <- data.frame(contig = character(), bin = character())
 
-# Try different possible DAS Tool output file patterns
-dastool_dir <- file.path(dirname(dirname(dirname(snakemake@output[["table"]]))), "binning", "dastool")
-possible_files <- c(
-  file.path(dastool_dir, paste0(sample_name, "_DASTool_contig2bin.tsv")),
-  file.path(dastool_dir, paste0(sample_name, "_DASTool_scaffolds2bin.txt")),
-  file.path(dastool_dir, paste0(sample_name, "_contig2bin.tsv")),
-  file.path(dastool_dir, paste0(sample_name, "_scaffolds2bin.txt")),
-  file.path(dastool_dir, "contig2bin.tsv"),
-  file.path(dastool_dir, "scaffolds2bin.txt")
-)
+# Look for final DAS Tool bin files
+dastool_bins_dir <- file.path(dirname(dirname(dirname(snakemake@output[["table"]]))), "binning", "dastool", paste0(sample_name, "_DASTool_bins"))
 
-scaffolds2bin_path <- NULL
-for (path in possible_files) {
-  if (file.exists(path)) {
-    scaffolds2bin_path <- path
-    break
-  }
-}
-
-if (!is.null(scaffolds2bin_path)) {
-  bin_mapping <- read_tsv(scaffolds2bin_path, col_names = c("contig_full", "bin"), col_types = cols()) %>%
-    # Extract contig number from full contig name (e.g., NODE_1662_length_43637_cov_146.0889 -> 1662)
-    mutate(contig = str_extract(contig_full, "(?<=NODE_)\\d+(?=_)")) %>%
-    filter(!is.na(contig)) %>%
-    select(contig, bin)
+if (dir.exists(dastool_bins_dir)) {
+  # Find all bin FASTA files
+  bin_files <- list.files(dastool_bins_dir, pattern = "bin\\..*\\.fa$", full.names = TRUE)
   
-  cat("Binning information loaded from:", scaffolds2bin_path, "\n")
-  cat("Binning information loaded:", nrow(bin_mapping), "contigs in bins\n")
-  cat("Number of bins found:", length(unique(bin_mapping$bin)), "\n")
-  cat("Sample bins:", paste(unique(bin_mapping$bin)[1:min(5, length(unique(bin_mapping$bin)))], collapse=", "), "\n")
-} else {
-  cat("Warning: No DAS Tool scaffolds2bin file found. Tried:\n")
-  for (path in possible_files) {
-    cat("  -", path, "\n")
+  if (length(bin_files) > 0) {
+    cat("Found", length(bin_files), "final DAS Tool bins\n")
+    
+    # Extract contig information from each bin file
+    for (bin_file in bin_files) {
+      bin_name <- str_remove(basename(bin_file), "\\.fa$")  # e.g., "bin.1"
+      
+      # Read FASTA headers to get contig names
+      fasta_lines <- readLines(bin_file)
+      header_lines <- fasta_lines[grepl("^>", fasta_lines)]
+      
+      # Extract contig numbers from headers
+      for (header in header_lines) {
+        # Remove the ">" and extract NODE number
+        contig_match <- str_extract(header, "NODE_(\\d+)_")
+        if (!is.na(contig_match)) {
+          contig_num <- str_extract(contig_match, "\\d+")
+          if (!is.na(contig_num)) {
+            bin_mapping <- rbind(bin_mapping, data.frame(contig = contig_num, bin = bin_name))
+          }
+        }
+      }
+    }
+    
+    cat("Final binning information:\n")
+    cat("- Total binned contigs:", nrow(bin_mapping), "\n")
+    cat("- Number of final bins:", length(unique(bin_mapping$bin)), "\n")
+    cat("- Bin names:", paste(unique(bin_mapping$bin), collapse=", "), "\n")
+    
+    # Write mapping file for reference
+    mapping_file <- file.path(dirname(snakemake@output[["table"]]), "final_dastool_contig2bin.tsv")
+    write_tsv(bin_mapping, mapping_file)
+    cat("- Mapping file written to:", mapping_file, "\n")
+    
+  } else {
+    cat("No final DAS Tool bin files found in:", dastool_bins_dir, "\n")
   }
+} else {
+  cat("DAS Tool bins directory not found:", dastool_bins_dir, "\n")
   cat("Proceeding without binning information - all contigs will be marked as 'none'\n")
 }
 
