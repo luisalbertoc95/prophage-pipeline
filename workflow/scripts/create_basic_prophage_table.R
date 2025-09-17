@@ -89,17 +89,50 @@ if (file.exists(snakemake@input[["phispy_unique_ids"]]) &&
   cat("No unique PhiSpy sequences - wrote empty FASTA\n")
 }
 
-# Create basic prophage table (coordinates only)
-cat("\n3. Creating basic prophage table...\n")
+# Read binning information
+cat("\n3. Reading binning information...\n")
+sample_name <- basename(dirname(dirname(snakemake@output[["table"]])))
+scaffolds2bin_path <- file.path(dirname(dirname(dirname(snakemake@output[["table"]]))), "binning", "dastool", paste0(sample_name, "_DASTool_scaffolds2bin.txt"))
+
+bin_mapping <- data.frame(contig = character(), bin = character())
+if (file.exists(scaffolds2bin_path)) {
+  bin_mapping <- read_tsv(scaffolds2bin_path, col_names = c("contig_full", "bin"), col_types = cols()) %>%
+    # Extract contig number from full contig name (e.g., NODE_1662_length_43637_cov_146.0889 -> 1662)
+    mutate(contig = str_extract(contig_full, "(?<=NODE_)\\d+(?=_)")) %>%
+    filter(!is.na(contig)) %>%
+    select(contig, bin)
+  
+  cat("Binning information loaded:", nrow(bin_mapping), "contigs in bins\n")
+  cat("Number of bins found:", length(unique(bin_mapping$bin)), "\n")
+  cat("Sample bins:", paste(unique(bin_mapping$bin)[1:min(5, length(unique(bin_mapping$bin)))], collapse=", "), "\n")
+} else {
+  cat("Warning: DAS Tool scaffolds2bin file not found at:", scaffolds2bin_path, "\n")
+  cat("Proceeding without binning information - all contigs will be marked as 'none'\n")
+}
+
+# Create basic prophage table with bin information
+cat("\n4. Creating basic prophage table with bin information...\n")
 final_prophage_table <- merged_bed %>%
-  select(contig, start, end, tool)
+  select(contig, start, end, tool) %>%
+  mutate(contig = as.character(contig)) %>%
+  left_join(bin_mapping %>% mutate(contig = as.character(contig)), by = 'contig') %>%
+  mutate(bin = ifelse(is.na(bin), "none", bin))
 
 cat("Final prophage table:", nrow(final_prophage_table), "prophages\n")
-print(final_prophage_table)
+cat("Prophages in bins:", sum(final_prophage_table$bin != "none"), "of", nrow(final_prophage_table), "\n")
+cat("Prophages unbinned:", sum(final_prophage_table$bin == "none"), "of", nrow(final_prophage_table), "\n")
+
+# Show breakdown by tool and binning status
+bin_tool_summary <- final_prophage_table %>%
+  group_by(tool, bin != "none") %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  rename(is_binned = 2)
+cat("Prophage distribution by tool and binning status:\n")
+print(bin_tool_summary)
 
 # Write output file
 write.table(final_prophage_table, snakemake@output[["table"]], row.names=FALSE, sep="\t", quote=FALSE)
 
-cat("\n=== BASIC PROPHAGE TABLE COMPLETE ===\n")
-cat("- Output table:", snakemake@output[["table"]], "\n")
+cat("\n=== BASIC PROPHAGE TABLE WITH BINNING COMPLETE ===\n")
+cat("- Output table (with bin column):", snakemake@output[["table"]], "\n")
 cat("- Output FASTA:", snakemake@output[["fasta"]], "\n")

@@ -140,7 +140,8 @@ rule create_basic_prophage_table:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "merged_prophages.bed"),
         phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy_unique_ids.txt"),
         genomad = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
-        phispy = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy")
+        phispy = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy"),
+        binning_done = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins")
     conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
@@ -153,7 +154,8 @@ rule create_basic_prophage_table:
 rule add_taxonomy_to_prophage_table:
     input:
         basic_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
-        taxonomy = get_taxonomy_input
+        mmseqs_taxonomy = os.path.join(config["outdir"], "{sample}", "taxonomy", "mmseqs"),
+        gtdbtk_taxonomy = os.path.join(config["outdir"], "{sample}", "taxonomy", "gtdbtk")
     conda: config["conda_envs"]["phage_all"]
     output:
         table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv")
