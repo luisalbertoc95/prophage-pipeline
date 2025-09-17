@@ -71,6 +71,16 @@ def get_taxonomy_input(wildcards):
     else:
         return os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
 
+# Conditional input function for phage_all rule to avoid circular dependency
+def get_phage_all_taxonomy_input(wildcards):
+    # Only include taxonomy input if we're in all_contigs mode
+    # In prophage_only mode, we'll run without taxonomy first, then add it later
+    if config.get("taxonomy_scope", "prophage_only") == "all_contigs":
+        return get_taxonomy_input(wildcards)
+    else:
+        # Return empty - we'll add taxonomy in a separate step
+        return []
+
 def get_phage_all_input(wildcards):
     inputs = {
         "genomad": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
@@ -123,28 +133,39 @@ rule prophage_overlap_detection:
         awk '{{print $5}}' {config[outdir]}/{wildcards.sample}/phage_analysis/phispy_unique.bed > {output.phispy_unique_ids} 2>> {log}
         """
 
-rule phage_all:
+rule create_basic_prophage_table:
     input:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "merged_prophages.bed"),
         phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy_unique_ids.txt"),
         genomad = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
-        phispy = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy"),
-        taxonomy = get_taxonomy_input
+        phispy = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy")
     conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
-        table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
+        table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv")
+    log:
+        os.path.join(config["outdir"], "logs", "create_basic_prophage_table", "{sample}.log")
+    script:
+        "../scripts/create_basic_prophage_table.R"
+
+rule add_taxonomy_to_prophage_table:
+    input:
+        basic_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
+        taxonomy = get_taxonomy_input
+    conda: config["conda_envs"]["phage_all"]
+    output:
         table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv")
     log:
-        os.path.join(config["outdir"], "logs", "phage_all", "{sample}.log")
+        os.path.join(config["outdir"], "logs", "add_taxonomy_to_prophage_table", "{sample}.log")
     script:
-        "../scripts/merge_prophages_bedtools.R"
+        "../scripts/add_taxonomy_to_prophage_table.R"
 
 rule final_prophage_output:
     input:
         genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
         unique_phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
         prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
+        prophage_table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv"),
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta")
     output:
         final_prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
@@ -200,7 +221,8 @@ rule run_everything:
         checkm = os.path.join(config["outdir"], "{sample}", "binning", "checkm"),
         checkv = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv"),
         prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
-        contigs_with_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "contigs_with_prophages.fasta")
+        contigs_with_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "contigs_with_prophages.fasta"),
+        prophage_table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv")
     output:
         os.path.join(config["outdir"], "{sample}", "phage_analysis", "done")
     shell:
