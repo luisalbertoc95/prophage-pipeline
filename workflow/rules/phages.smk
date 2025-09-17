@@ -69,6 +69,7 @@ def get_taxonomy_input(wildcards):
     if config["taxonomy_method"] == "gtdbtk":
         return os.path.join(config["outdir"], wildcards.sample, "taxonomy", "gtdbtk")
     else:
+        # MMseqs taxonomy - same output directory regardless of which rule creates it
         return os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
 
 # Conditional input function for phage_all rule to avoid circular dependency
