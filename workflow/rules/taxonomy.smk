@@ -1,8 +1,17 @@
 
+# Function to determine taxonomy rule inputs based on scope
+def get_mmseqs_input(wildcards):
+    inputs = {
+        "contigs": os.path.join(config["outdir"], wildcards.sample, "binning", "final_filtered_contigs.fasta")
+    }
+    # Only require prophage table for prophage_only mode
+    if config.get("taxonomy_scope", "prophage_only") == "prophage_only":
+        inputs["prophage_table"] = os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "final_prophage_table.tsv")
+    return inputs
+
 rule mmseqs_taxonomy:
     input:
-        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
-        prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv")
+        unpack(get_mmseqs_input)
     params:
         db = config["mmseqs_database"],
         taxonomy_scope = config.get("taxonomy_scope", "prophage_only")
