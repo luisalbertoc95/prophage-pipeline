@@ -98,8 +98,11 @@ bin_mapping <- data.frame(contig = character(), bin = character())
 # Try different possible DAS Tool output file patterns
 dastool_dir <- file.path(dirname(dirname(dirname(snakemake@output[["table"]]))), "binning", "dastool")
 possible_files <- c(
+  file.path(dastool_dir, paste0(sample_name, "_DASTool_contig2bin.tsv")),
   file.path(dastool_dir, paste0(sample_name, "_DASTool_scaffolds2bin.txt")),
+  file.path(dastool_dir, paste0(sample_name, "_contig2bin.tsv")),
   file.path(dastool_dir, paste0(sample_name, "_scaffolds2bin.txt")),
+  file.path(dastool_dir, "contig2bin.tsv"),
   file.path(dastool_dir, "scaffolds2bin.txt")
 )
 
@@ -144,7 +147,8 @@ cat("Prophages unbinned:", sum(final_prophage_table$bin == "none"), "of", nrow(f
 
 # Show breakdown by tool and binning status
 bin_tool_summary <- final_prophage_table %>%
-  group_by(tool, is_binned = bin != "none") %>%
+  mutate(is_binned = bin != "none") %>%
+  group_by(tool, is_binned) %>%
   summarise(count = n(), .groups = 'drop')
 cat("Prophage distribution by tool and binning status:\n")
 print(bin_tool_summary)
