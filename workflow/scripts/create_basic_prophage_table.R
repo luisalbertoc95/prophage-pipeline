@@ -95,8 +95,8 @@ sample_name <- basename(dirname(dirname(snakemake@output[["table"]])))
 
 bin_mapping <- data.frame(contig = character(), bin = character())
 
-# Look for final DAS Tool bin files
-dastool_bins_dir <- file.path(dirname(dirname(dirname(snakemake@output[["table"]]))), "binning", "dastool", paste0(sample_name, "_DASTool_bins"))
+# Look for final DAS Tool bin files (copied to GTDB-Tk genomes directory)
+dastool_bins_dir <- file.path(dirname(dirname(dirname(snakemake@output[["table"]]))), "taxonomy", "gtdbtk", "genomes")
 
 if (dir.exists(dastool_bins_dir)) {
   # Find all bin FASTA files
