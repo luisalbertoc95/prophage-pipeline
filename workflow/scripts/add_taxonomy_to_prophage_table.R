@@ -126,7 +126,8 @@ final_prophage_table_tax <- final_prophage_table %>%
   # Then join with MMseqs taxonomy by contig (for unbinned contigs where GTDB-Tk is NA)
   left_join(
     mmseqs_taxonomy %>% mutate(contig = as.character(contig)) %>%
-      select(contig, all_of(paste0(taxonomy_columns, "_mmseqs" := taxonomy_columns)), taxonomy_source_mmseqs = taxonomy_source),
+      rename_with(~paste0(.x, "_mmseqs"), all_of(taxonomy_columns)) %>%
+      select(contig, all_of(paste0(taxonomy_columns, "_mmseqs")), taxonomy_source_mmseqs = taxonomy_source),
     by = 'contig'
   ) %>%
   # Use GTDB-Tk for binned contigs, MMseqs for unbinned contigs
