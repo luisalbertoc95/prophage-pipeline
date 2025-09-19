@@ -1,68 +1,102 @@
 
+# Prophage Pipeline
+
 <img width="930" height="580" alt="updated_workflow_072525 drawio" src="https://github.com/user-attachments/assets/4da9d036-4329-403c-a740-8934d393b127" />
 
+A Snakemake pipeline for comprehensive prophage detection and host taxonomy assignment from metagenomic data. The pipeline combines multiple prophage detection tools, performs binning-based host assignment, and integrates hybrid taxonomy (GTDB-Tk + MMseqs) for accurate host identification.
 
-# How to run:
-Set up an environment with Snakemake version 8+, [mamba](https://anaconda.org/conda-forge/mamba), and [snakemake-executor-plugin-slurm](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html)
+## Quick Start
 
-```
+### Prerequisites
+- Snakemake 8+
+- [mamba](https://anaconda.org/conda-forge/mamba)
+- [snakemake-executor-plugin-slurm](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html)
+
+### Running the Pipeline
+```bash
 cd workflow
-
-snakemake --profile ../profile/slurm/ --config [options]
+snakemake --profile ../profile/slurm/ --config reads=/path/to/reads outdir=/path/to/output
 ```
 
-## Note:
+**Note:** Paired-end reads must have identical names in R1 and R2 files.
 
-Paired-end reads belonging to the same pair must have identical names in the r1 and r2 fastq files
+## Configuration Options
 
-# Options:
+### Required Parameters
+- `reads`: Directory containing paired-end FASTQ files (suffixes: `_1.fastq.gz`, `_2.fastq.gz`)
+- `outdir`: Output directory for all results
 
- - reads: specify path to directory where paired-end fastq reads are (with suffixes _1.fastq.gz and _2.fastq.gz)
+### Optional Parameters
+- `fastq_names_1`: R1 file pattern (default: `{sample}_1.fastq.gz`)
+- `fastq_names_2`: R2 file pattern (default: `{sample}_2.fastq.gz`)
+- `fastp_min_sequence_length`: Minimum read length after trimming (default: 120)
+- `taxonomy_scope`: Taxonomy analysis scope - `"prophage_only"` or `"all_contigs"` (default: `"prophage_only"`)
 
- - outdir: specify path to directory where all outputs will be created
+### Database Paths
+- `genomad_database`: GeNomad viral database
+- `bakta_database`: Bakta annotation database  
+- `gtdbtk_database`: GTDB-Tk reference database
+- `mmseqs_database`: MMseqs NR database
+- `checkv_database`: CheckV quality database
+- `human_ref`: Human reference genome for decontamination
 
- - fastq_names_1: default is {sample}_1.fastq.gz
+## Key Features
 
- - fastq_names_2: default is {sample}_2.fastq.gz
+### Prophage Detection
+- **GeNomad**: ML-based prophage detection
+- **PhiSpy**: HMM-based prophage detection  
+- **Overlap Resolution**: Combines predictions, prioritizing GeNomad with unique PhiSpy additions
 
- - fastp_min_sequence_length: length threshold (in bp) for fastp step (default is 120)
+### Host Taxonomy Assignment
+- **Hybrid Approach**: GTDB-Tk for high-quality binned contigs, MMseqs for unbinned contigs
+- **Binning Integration**: Uses DAS Tool consensus bins from CONCOCT, MaxBin, and MetaBAT
+- **Configurable Scope**: Taxonomy on prophage contigs only or all contigs
 
- - human_ref: "/ref/sahlab/data/GRCh38.fna.gz"
+### Quality Control
+- **CheckV**: Prophage completeness and contamination assessment
+- **CheckM**: Bin quality evaluation
+- **Coverage Analysis**: CoverM mapping statistics
 
- - genomad_database: "/ref/sahlab/data/viral_analysis_DBs/genomad_DBs/genomad_db"
+## Outputs
 
- - bakta_database: "/ref/sahlab/data/bakta_db"
-
- - cat_database: "/ref/sahlab/data/CAT_prepare_20210107"
-
- - checkv_database: "/ref/sahlab/data/viral_analysis_DBs/checkV_DB/checkv-db-v1.4"
-
-
-### Example command:
-
+Each sample generates the following directory structure:
 ```
-snakemake --profile ../profile/slurm/ --config reads=/scratch/sahlab/Megan/test_reads outdir=/scratch/sahlab/Megan/pipeline_test_out
+{sample}/
+├── assembly/           # Megahit assembly results
+├── binning/           # DAS Tool consensus bins and CheckM results  
+├── coverm/            # Read mapping and coverage statistics
+├── taxonomy/          # GTDB-Tk and MMseqs taxonomy results
+└── phage_analysis/    # Prophage detection and analysis
 ```
 
-# Outputs:
+### Key Output Files
 
-The output directory should contain separate directories for each sample. Each sample's directory should have 5 subdirectories:
+#### Prophage Tables
+- `final_prophage_table.tsv`: Prophage coordinates with bin assignments
+- `final_prophage_table_with_host_taxonomy.tsv`: Prophages with host taxonomy (hybrid GTDB-Tk/MMseqs)
 
- - assembly
+#### Sequences  
+- `final_prophage.fasta`: Extracted prophage sequences
+- `contigs_with_prophages.fasta`: Full contigs containing prophages
 
- - binning
+#### Quality Assessment
+- `checkv/`: Prophage quality and completeness analysis
+- `checkm/`: Bin quality statistics
 
- - coverm
+## Example Commands
 
- - taxonomy
+### Basic Run
+```bash
+snakemake --profile ../profile/slurm/ --config \
+  reads=/scratch/data/fastq_files \
+  outdir=/scratch/results/prophage_analysis
+```
 
- - phage_analysis
-
-### In the phage_analysis directory:
-
- - final_prophage_table.tsv: has the prophages (contigs and start/stop coordinates)
-
- - final_prophage_table_with_taxonomy.tsv: has the prophages + taxonomy info (contigs, start/stop coordinates, and taxonomy assigned to that contig)
-
- - final_prophage.fasta: has the sequences of all the final prophage regions
+### All-Contigs Taxonomy Mode  
+```bash
+snakemake --profile ../profile/slurm/ --config \
+  reads=/scratch/data/fastq_files \
+  outdir=/scratch/results/prophage_analysis \
+  taxonomy_scope=all_contigs
+```
 
