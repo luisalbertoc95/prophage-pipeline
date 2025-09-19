@@ -1,0 +1,172 @@
+library(readr)
+library(tidyverse)
+library(Biostrings)
+
+cat("=== BEDTOOLS-BASED PROPHAGE MERGE ===\n")
+
+# Read the merged BED file (already contains overlap detection results)
+cat("1. Reading merged prophage predictions from BEDtools...\n")
+merged_bed <- read_tsv(snakemake@input[["merged_bed"]], 
+                      col_names = c("contig", "start", "end", "tool", "id"),
+                      col_types = cols(
+                        contig = col_character(),
+                        start = col_integer(),
+                        end = col_integer(), 
+                        tool = col_character(),
+                        id = col_character()
+                      ))
+
+cat("Merged prophage predictions:")
+print(merged_bed)
+cat("\n")
+
+# Extract unique PhiSpy FASTA sequences
+cat("2. Extracting unique PhiSpy prophage sequences...\n")
+if (file.exists(snakemake@input[["phispy_unique_ids"]]) && 
+    file.size(snakemake@input[["phispy_unique_ids"]]) > 0) {
+  
+  # Read the unique PhiSpy IDs from BEDtools output
+  unique_ids <- readLines(snakemake@input[["phispy_unique_ids"]])
+  cat("Unique PhiSpy IDs to extract:", paste(unique_ids, collapse=", "), "\n")
+  
+  # Read PhiSpy FASTA file
+  fasta_path <- file.path(snakemake@input[["phispy"]], "phage.fasta")
+  if (file.exists(fasta_path)) {
+    fasta <- readDNAStringSet(fasta_path)
+    cat("Total PhiSpy sequences available:", length(fasta), "\n")
+    cat("FASTA sequence names (first 3):", paste(names(fasta)[1:min(3, length(fasta))], collapse=", "), "...\n")
+    
+    # Get unique PhiSpy bed entries to match by contig and coordinates
+    unique_bed <- merged_bed %>% filter(tool == "phispy")
+    cat("Unique PhiSpy predictions to extract:", nrow(unique_bed), "\n")
+    
+    # Match FASTA sequences by contig number (more robust than pp numbers)
+    matched_sequences <- DNAStringSet()
+    for (i in 1:nrow(unique_bed)) {
+      contig_num <- unique_bed$contig[i]
+      start_coord <- unique_bed$start[i]
+      end_coord <- unique_bed$end[i]
+      
+      # Look for FASTA headers containing this contig number
+      pattern <- paste0("NODE_", contig_num, "_")
+      matching_idx <- grep(pattern, names(fasta))
+      
+      if (length(matching_idx) > 0) {
+        # If multiple matches, try to find one with matching coordinates
+        coord_pattern <- paste0("_", start_coord, "_", end_coord)
+        coord_matches <- grep(coord_pattern, names(fasta)[matching_idx])
+        
+        if (length(coord_matches) > 0) {
+          # Found exact coordinate match
+          final_idx <- matching_idx[coord_matches[1]]
+          matched_sequences <- c(matched_sequences, fasta[final_idx])
+          cat("Matched contig", contig_num, "with coordinates", start_coord, "-", end_coord, "\n")
+        } else {
+          # Take first contig match (coordinates might be slightly different)
+          final_idx <- matching_idx[1]
+          matched_sequences <- c(matched_sequences, fasta[final_idx])
+          cat("Matched contig", contig_num, "(coordinates may differ)\n")
+        }
+      } else {
+        cat("Warning: No FASTA sequence found for contig", contig_num, "\n")
+      }
+    }
+    
+    if (length(matched_sequences) > 0) {
+      writeXStringSet(matched_sequences, filepath=snakemake@output[["fasta"]])
+      cat("Successfully wrote", length(matched_sequences), "unique PhiSpy sequences to FASTA\n")
+    } else {
+      # Create empty FASTA if no sequences found
+      writeXStringSet(DNAStringSet(), filepath=snakemake@output[["fasta"]])
+      cat("No matching PhiSpy sequences found - wrote empty FASTA\n")
+    }
+  } else {
+    stop("PhiSpy FASTA file not found: ", fasta_path)
+  }
+} else {
+  # No unique PhiSpy sequences - create empty FASTA
+  writeXStringSet(DNAStringSet(), filepath=snakemake@output[["fasta"]])
+  cat("No unique PhiSpy sequences - wrote empty FASTA\n")
+}
+
+# Get taxonomy data (MMseqs only)
+cat("\n3. Processing taxonomy data...\n")
+if ("taxonomy" %in% names(snakemake@input)) {
+  cat("Using MMseqs taxonomy...\n")
+  # MMseqs taxonomy parsing
+  mmseqs_path <- file.path(snakemake@input[["taxonomy"]], "contig.taxonomy")
+  
+  if (file.exists(mmseqs_path)) {
+    taxonomy_data <- read_tsv(mmseqs_path, col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
+      # Extract contig number using extract() - revert to working method
+      extract(contig_full, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
+      filter(!is.na(contig)) %>%
+      select(contig, lineage) %>%
+      separate_wider_delim(lineage, ";", names=c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'), too_few = "align_start", too_many = "drop") %>%
+      select(contig, superkingdom, phylum, class, order, family, genus, species)
+    
+    cat("MMseqs taxonomy loaded:", nrow(taxonomy_data), "records\n")
+    cat("Unique contigs in taxonomy:", length(unique(taxonomy_data$contig)), "\n")
+    
+    # Show taxonomy summary
+    tax_summary <- taxonomy_data %>%
+      summarise(
+        total_contigs = n(),
+        with_superkingdom = sum(!is.na(superkingdom) & superkingdom != "unknown"),
+        with_species = sum(!is.na(species) & species != "unknown" & !str_detect(species, "^uc_"))
+      )
+    cat("Taxonomy summary: ", tax_summary$total_contigs, " contigs,", 
+        tax_summary$with_superkingdom, " with superkingdom,", 
+        tax_summary$with_species, " with species\n")
+  } else {
+    cat("Warning: MMseqs taxonomy file not found, creating empty taxonomy\n")
+    taxonomy_data <- data.frame(contig = character(), superkingdom = character(), phylum = character(), 
+                               class = character(), order = character(), family = character(), 
+                               genus = character(), species = character())
+  }
+} else {
+  cat("Warning: No taxonomy input specified, creating empty taxonomy\n")
+  taxonomy_data <- data.frame(contig = character(), superkingdom = character(), phylum = character(), 
+                             class = character(), order = character(), family = character(), 
+                             genus = character(), species = character())
+}
+
+# Create output tables
+cat("\n4. Creating output tables...\n")
+
+# Basic table (coordinates only)
+final_prophage_table <- merged_bed %>%
+  select(contig, start, end, tool)
+
+cat("Final prophage table:", nrow(final_prophage_table), "prophages\n")
+print(final_prophage_table)
+
+# Table with taxonomy
+final_prophage_table_tax <- final_prophage_table %>%
+  mutate(contig = as.character(contig)) %>%
+  left_join(taxonomy_data %>% mutate(contig = as.character(contig)), by = 'contig')
+
+cat("Final prophage table with taxonomy:", nrow(final_prophage_table_tax), "prophages\n")
+cat("Prophages with taxonomy:", sum(!is.na(final_prophage_table_tax$superkingdom) & final_prophage_table_tax$superkingdom != "unknown"), "of", nrow(final_prophage_table_tax), "\n")
+
+# Show breakdown by tool
+tool_summary <- final_prophage_table_tax %>%
+  group_by(tool) %>%
+  summarise(
+    total = n(),
+    with_taxonomy = sum(!is.na(superkingdom) & superkingdom != "unknown"),
+    .groups = 'drop'
+  )
+cat("Taxonomy by tool:\n")
+for(i in 1:nrow(tool_summary)) {
+  cat("  ", tool_summary$tool[i], ":", tool_summary$with_taxonomy[i], "/", tool_summary$total[i], "\n")
+}
+
+# Write output files
+write.table(final_prophage_table, snakemake@output[["table"]], row.names=FALSE, sep="\t", quote=FALSE)
+write.table(final_prophage_table_tax, snakemake@output[["table_with_taxonomy"]], row.names=FALSE, sep="\t", quote=FALSE)
+
+cat("\n=== BEDTOOLS MERGE COMPLETE ===\n")
+cat("- Output table:", snakemake@output[["table"]], "\n")
+cat("- Output table with taxonomy:", snakemake@output[["table_with_taxonomy"]], "\n") 
+cat("- Output FASTA:", snakemake@output[["fasta"]], "\n")

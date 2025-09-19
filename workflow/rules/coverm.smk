@@ -11,8 +11,7 @@ rule rename_contigs:
         for file in $files
         do
         echo $file
-        sed "s/^>/>{wildcards.sample}_/" $file \
-        > {output}/{wildcards.sample}_$(basename $file)
+        cp $file {output}/{wildcards.sample}_$(basename $file)
         done
         """
 
@@ -52,8 +51,22 @@ rule coverm_cluster:
         --output-representative-fasta-directory-copy {output} \
         --threads {threads}
 
-        # Concatenate clustered files
-        cat {output}/* > {config[outdir]}/all_bins_clustered.fasta
+        # Concatenate clustered files with unique headers
+        python3 -c "
+import os
+import glob
+counter = 1
+with open('{config[outdir]}/all_bins_clustered.fasta', 'w') as outfile:
+    for fasta_file in glob.glob('{output}/*'):
+        with open(fasta_file, 'r') as infile:
+            for line in infile:
+                if line.startswith('>'):
+                    # Create unique header with global counter
+                    outfile.write(f'>clustered_bin_{{counter}}\\n')
+                    counter += 1
+                else:
+                    outfile.write(line)
+"
         """
 
 rule coverm_mapping:

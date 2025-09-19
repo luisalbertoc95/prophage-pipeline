@@ -11,3 +11,5 @@ dependencies:
   - bioconductor-xvector=0.34.0
   - bioconductor-zlibbioc=1.40.0
   - r-essentials
+  - bedtools
+  - seqkit

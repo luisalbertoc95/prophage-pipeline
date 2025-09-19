@@ -8,13 +8,23 @@ fastp_min_sequence_length: 120
 human_ref: "/ref/sahlab/data/GRCh38.fna.gz"
 genomad_database: "/ref/sahlab/data/viral_analysis_DBs/genomad_DBs/genomad_db"
 bakta_database: "/ref/sahlab/data/bakta_db"
-cat_database: "/ref/sahlab/data/CAT_prepare_20210107"
+# cat_database: "/ref/sahlab/data/CAT_prepare_20210107"
+mmseqs_database: "/ref/sahlab/data/nr/nr_mmseqs15_DB"
+gtdbtk_database: "/ref/sahlab/data/gtdb_release226"
 checkv_database: "/ref/sahlab/data/viral_analysis_DBs/checkV_DB/checkv-db-v1.4"
+
+# Taxonomy method selection: "mmseqs" or "gtdbtk"  
+taxonomy_method: "mmseqs"
+
+# Taxonomy scope: "prophage_only" (faster, only contigs with prophages) or "all_contigs" (comprehensive)
+taxonomy_scope: "prophage_only"
 
 # Conda environments
 conda_envs:
   bakta: "../envs/bakta_env.yaml"
-  cat: "../envs/cat_env.yaml"
+  # cat: "../envs/cat_env.yaml"
+  mmseqs: "../envs/mmseqs_env.yaml"
+  gtdbtk: "../envs/gtdbtk_env.yaml"
   checkm: "../envs/checkm_env.yaml"
   checkv: "../envs/checkv_env.yaml"
   concoct: "../envs/concoct_env.yaml"

@@ -32,7 +32,7 @@ with open('{output.dir}/final.contigs.fa', 'r') as infile, open('{output.contigs
             length = length_match.group(1) if length_match else '500'
             cov = cov_match.group(1) if cov_match else '1.0'
             # Create SPAdes-compatible header
-            new_header = f'>NODE_{{node_counter}}_length_{{length}}_cov_{{cov}}\\n'
+            new_header = f'>{wildcards.sample}_NODE_{{node_counter}}_length_{{length}}_cov_{{cov}}\\n'
             outfile.write(new_header)
             node_counter += 1
         else:

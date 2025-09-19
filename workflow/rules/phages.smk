@@ -46,7 +46,7 @@ rule bakta:
         os.path.join(config["outdir"], "benchmarks", "bakta", "{sample}_bmrk.txt")
     shell:
         """
-        bakta --db {input.db}/db --force --skip-plot --output {output} \
+        bakta --db {input.db}/db --force --skip-plot --keep-contig-headers --output {output} \
         --threads {threads} {input.contigs} 2> {log}
         """
 
@@ -64,32 +64,130 @@ rule phispy:
     shell:
         "PhiSpy.py {input}/*.gbff -o {output} --output_choice 63 2> {log} || true"
 
-rule phage_all:
+# Conditional input function for taxonomy data
+def get_taxonomy_input(wildcards):
+    if config["taxonomy_method"] == "gtdbtk":
+        return os.path.join(config["outdir"], wildcards.sample, "taxonomy", "gtdbtk")
+    else:
+        # MMseqs taxonomy - same output directory regardless of which rule creates it
+        return os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
+
+# Conditional input function for phage_all rule to avoid circular dependency
+def get_phage_all_taxonomy_input(wildcards):
+    # Only include taxonomy input if we're in all_contigs mode
+    # In prophage_only mode, we'll run without taxonomy first, then add it later
+    if config.get("taxonomy_scope", "prophage_only") == "all_contigs":
+        return get_taxonomy_input(wildcards)
+    else:
+        # Return empty - we'll add taxonomy in a separate step
+        return []
+
+def get_phage_all_input(wildcards):
+    inputs = {
+        "genomad": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
+        "phispy": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy"),
+        "mmseqs": get_taxonomy_input(wildcards)
+    }
+    
+    return inputs
+
+rule prophage_overlap_detection:
     input:
-        genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
-        phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy"),
-        CAT = os.path.join(config["outdir"], "{sample}", "taxonomy", "CAT")
+        genomad = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
+        phispy = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy")
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "merged_prophages.bed"),
+        phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy_unique_ids.txt")
+    log:
+        os.path.join(config["outdir"], "logs", "prophage_overlap", "{sample}.log")
+    shell:
+        """
+        # Create BED files from both tools
+        # GeNomad: extract contig, start, end from TSV
+        awk 'NR>1 {{
+            # Extract NODE number from source_seq column (column 2)
+            if (match($2, /NODE_([0-9]+)_/, arr)) {{
+                print arr[1] "\t" $3 "\t" $4 "\tgenomad\t" NR-1
+            }}
+        }}' {input.genomad}/final_filtered_contigs_find_proviruses/final_filtered_contigs_provirus.tsv > {config[outdir]}/{wildcards.sample}/phage_analysis/genomad.bed 2> {log}
+        
+        # PhiSpy: extract contig, start, end from TSV  
+        awk 'NR>1 {{
+            # Extract NODE number from Contig column (column 2)
+            if (match($2, /NODE_([0-9]+)_/, arr)) {{
+                # Split prophage number (pp_X) to get index
+                split($1, pp_parts, "_")
+                print arr[1] "\t" $3 "\t" $4 "\tphispy\t" pp_parts[2]
+            }}
+        }}' {input.phispy}/prophage.tsv > {config[outdir]}/{wildcards.sample}/phage_analysis/phispy.bed 2>> {log}
+        
+        # Find PhiSpy predictions that DON'T overlap with geNomad (use -v flag)
+        bedtools intersect -a {config[outdir]}/{wildcards.sample}/phage_analysis/phispy.bed \
+                          -b {config[outdir]}/{wildcards.sample}/phage_analysis/genomad.bed \
+                          -v > {config[outdir]}/{wildcards.sample}/phage_analysis/phispy_unique.bed 2>> {log}
+        
+        # Create merged BED: all geNomad + unique PhiSpy
+        cat {config[outdir]}/{wildcards.sample}/phage_analysis/genomad.bed \
+            {config[outdir]}/{wildcards.sample}/phage_analysis/phispy_unique.bed > {output.merged_bed} 2>> {log}
+        
+        # Extract PhiSpy unique IDs for FASTA extraction
+        awk '{{print $5}}' {config[outdir]}/{wildcards.sample}/phage_analysis/phispy_unique.bed > {output.phispy_unique_ids} 2>> {log}
+        """
+
+rule create_basic_prophage_table:
+    input:
+        merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "merged_prophages.bed"),
+        phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "phispy_unique_ids.txt"),
+        genomad = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "genomad"),
+        phispy = lambda wildcards: os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "phispy"),
+        binning_done = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins")
     conda: config["conda_envs"]["phage_all"]
     output:
         fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
-        table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
-        table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv")
+        table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv")
+    log:
+        os.path.join(config["outdir"], "logs", "create_basic_prophage_table", "{sample}.log")
     script:
-        "../scripts/merge_prophages.R"
+        "../scripts/create_basic_prophage_table.R"
+
+rule add_taxonomy_to_prophage_table:
+    input:
+        basic_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
+        mmseqs_taxonomy = os.path.join(config["outdir"], "{sample}", "taxonomy", "mmseqs"),
+        gtdbtk_taxonomy = os.path.join(config["outdir"], "{sample}", "taxonomy", "gtdbtk")
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv")
+    log:
+        os.path.join(config["outdir"], "logs", "add_taxonomy_to_prophage_table", "{sample}.log")
+    script:
+        "../scripts/add_taxonomy_to_prophage_table.R"
 
 rule final_prophage_output:
     input:
         genomad = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad"),
-        unique_phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta")
+        unique_phispy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unique_phispy_prophage.fasta"),
+        prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
+        prophage_table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv"),
+        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta")
     output:
-        os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta")
+        final_prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
+        contigs_with_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "contigs_with_prophages.fasta")
     shell:
         """
+        # Create final prophage sequences (extracted prophages only)
         cp {input.genomad}/final_filtered_contigs_find_proviruses/final_filtered_contigs_provirus.fna \
         {config[outdir]}/{wildcards.sample}/phage_analysis/genomad_prophage.fasta
 
         cat {input.genomad}/final_filtered_contigs_find_proviruses/final_filtered_contigs_provirus.fna \
-        {input.unique_phispy} > {output}
+        {input.unique_phispy} > {output.final_prophage}
+
+        # Create full contigs containing prophages
+        awk 'NR>1 {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt
+        
+        seqkit grep -r -f {config[outdir]}/{wildcards.sample}/phage_analysis/prophage_contigs.txt \
+        {input.contigs} > {output.contigs_with_prophages}
         """
 
 rule checkv_db:
@@ -126,7 +224,9 @@ rule run_everything:
         coverm_stats = os.path.join(config["outdir"], "{sample}", "coverm", "{sample}_stats.txt"),
         checkm = os.path.join(config["outdir"], "{sample}", "binning", "checkm"),
         checkv = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv"),
-        prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta")
+        prophage = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage.fasta"),
+        contigs_with_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "contigs_with_prophages.fasta"),
+        prophage_table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv")
     output:
         os.path.join(config["outdir"], "{sample}", "phage_analysis", "done")
     shell:
