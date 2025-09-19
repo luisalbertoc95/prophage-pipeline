@@ -1,0 +1,39 @@
+# Pipeline outputs
+*.log
+*.tsv
+*.fasta
+*.fa
+*.fna
+*.fastq
+*.fastq.gz
+out/
+results/
+
+# R files
+*.R
+!workflow/scripts/*.R
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Snakemake
+.snakemake/
+slurm-*.out
+
+# Conda/Mamba
+.conda/
+.mamba/
+
+# Taxonomy databases and large files
+*.taxonomy
+*.mmseqs
+checkv/
+gtdbtk/
+genomad/
