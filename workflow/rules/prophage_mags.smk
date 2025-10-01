@@ -102,6 +102,9 @@ def aggregate_mag_prophage_inputs(wildcards):
 rule merge_mag_prophages:
     input:
         unpack(aggregate_mag_prophage_inputs)
+    params:
+        genomad_dirs = lambda wildcards, input: input.genomad,
+        phispy_dirs = lambda wildcards, input: input.phispy
     conda: config["conda_envs"]["phage_all"]
     output:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "merged_prophages.bed"),
@@ -118,7 +121,7 @@ rule merge_mag_prophages:
         touch {output.phispy_bed}
 
         # Extract GeNomad predictions from all bins
-        for genomad_dir in {input.genomad}; do
+        for genomad_dir in {params.genomad_dirs}; do
             bin_num=$(basename $genomad_dir | sed 's/bin\\.//;s/\\..*$//')
             tsv_file=$(find $genomad_dir -name "*_provirus.tsv" -o -name "*_summary.tsv" | grep provirus | head -1)
 
@@ -132,7 +135,7 @@ rule merge_mag_prophages:
         done 2>> {log}
 
         # Extract PhiSpy predictions from all bins
-        for phispy_dir in {input.phispy}; do
+        for phispy_dir in {params.phispy_dirs}; do
             bin_num=$(basename $phispy_dir | sed 's/bin\\.//;s/\\..*$//')
             tsv_file="$phispy_dir/prophage.tsv"
 
@@ -174,6 +177,9 @@ rule extract_mag_prophage_sequences:
         phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_unique_ids.txt"),
         genomad_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["genomad"],
         phispy_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["phispy"]
+    params:
+        genomad_dirs = lambda wildcards, input: input.genomad_dirs,
+        phispy_dirs = lambda wildcards, input: input.phispy_dirs
     conda: config["conda_envs"]["phage_all"]
     output:
         prophage_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "all_prophages.fasta"),
@@ -183,7 +189,7 @@ rule extract_mag_prophage_sequences:
     shell:
         """
         # Collect all GeNomad prophage FASTA files
-        for genomad_dir in {input.genomad_dirs}; do
+        for genomad_dir in {params.genomad_dirs}; do
             fna_file=$(find $genomad_dir -name "*_provirus.fna" | head -1)
             if [ -f "$fna_file" ]; then
                 cat "$fna_file" >> {output.prophage_fasta}
@@ -192,7 +198,7 @@ rule extract_mag_prophage_sequences:
 
         # Collect unique PhiSpy prophage sequences
         if [ -s {input.phispy_unique_ids} ]; then
-            for phispy_dir in {input.phispy_dirs}; do
+            for phispy_dir in {params.phispy_dirs}; do
                 fasta_file="$phispy_dir/phage.fasta"
                 if [ -f "$fasta_file" ]; then
                     cat "$fasta_file" >> {output.prophage_fasta}
