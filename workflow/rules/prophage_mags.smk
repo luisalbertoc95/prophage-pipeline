@@ -101,7 +101,8 @@ def aggregate_mag_prophage_inputs(wildcards):
 
 rule merge_mag_prophages:
     input:
-        unpack(aggregate_mag_prophage_inputs)
+        unpack(aggregate_mag_prophage_inputs),
+        bin_list = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "bin_list.txt")
     params:
         genomad_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["genomad"],
         phispy_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["phispy"]
@@ -174,7 +175,8 @@ rule merge_mag_prophages:
 rule extract_mag_prophage_sequences:
     input:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "merged_prophages.bed"),
-        phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_unique_ids.txt")
+        phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_unique_ids.txt"),
+        bin_list = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "bin_list.txt")
     params:
         genomad_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["genomad"],
         phispy_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["phispy"]
