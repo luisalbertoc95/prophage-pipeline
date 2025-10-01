@@ -22,6 +22,7 @@ taxonomy_scope: "prophage_only"
 # Conda environments
 conda_envs:
   bakta: "../envs/bakta_env.yaml"
+  bbtools: "../envs/bbtools_env.yaml"
   # cat: "../envs/cat_env.yaml"
   mmseqs: "../envs/mmseqs_env.yaml"
   gtdbtk: "../envs/gtdbtk_env.yaml"
