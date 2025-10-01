@@ -80,10 +80,10 @@ checkpoint get_mag_bins:
         bin_list = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "bin_list.txt")
     shell:
         """
-        # Find all bin.*.fa files
+        # Find all bin.*.fa files and extract just the bin identifier
         find {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins \
-        -name "bin.*.fa" -type f | \
-        sed 's/.*bin\\.\\([0-9]*\\)\\.fa/\\1/' > {output.bin_list}
+        -name "bin.*.fa" -type f -exec basename {{}} \\; | \
+        sed 's/^bin\\.//;s/\\.fa$//' > {output.bin_list}
         """
 
 def aggregate_mag_prophage_inputs(wildcards):
