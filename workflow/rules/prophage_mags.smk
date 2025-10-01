@@ -103,8 +103,8 @@ rule merge_mag_prophages:
     input:
         unpack(aggregate_mag_prophage_inputs)
     params:
-        genomad_dirs = lambda wildcards, input: input.genomad,
-        phispy_dirs = lambda wildcards, input: input.phispy
+        genomad_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["genomad"],
+        phispy_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["phispy"]
     conda: config["conda_envs"]["phage_all"]
     output:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "merged_prophages.bed"),
@@ -174,12 +174,10 @@ rule merge_mag_prophages:
 rule extract_mag_prophage_sequences:
     input:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "merged_prophages.bed"),
-        phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_unique_ids.txt"),
+        phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_unique_ids.txt")
+    params:
         genomad_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["genomad"],
         phispy_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["phispy"]
-    params:
-        genomad_dirs = lambda wildcards, input: input.genomad_dirs,
-        phispy_dirs = lambda wildcards, input: input.phispy_dirs
     conda: config["conda_envs"]["phage_all"]
     output:
         prophage_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "all_prophages.fasta"),
