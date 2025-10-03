@@ -49,7 +49,14 @@ rule phispy_per_mag:
         os.path.join(config["outdir"], "benchmarks", "phispy_per_mag", "{sample}_bin.{bin_num}_bmrk.txt")
     shell:
         """
-        PhiSpy.py {input.bakta_dir}/*.gbff -o {output} --output_choice 63 2> {log} || true
+        gbff_file=$(find {input.bakta_dir} -name "*.gbff" | head -1)
+        if [ -f "$gbff_file" ]; then
+            PhiSpy.py "$gbff_file" -o {output} --output_choice 63 2> {log} || true
+        else
+            echo "No .gbff file found in {input.bakta_dir}" > {log}
+            mkdir -p {output}
+            touch {output}/.empty
+        fi
         """
 
 rule genomad_per_mag:
