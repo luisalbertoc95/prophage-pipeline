@@ -112,7 +112,7 @@ rule mask_prophage_regions:
     input:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "filt_4000_seqs_to_keep.fasta"),
         prophage_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "prophages.bed")
-    conda: config["conda_envs"]["bbtools"]
+    conda: config["conda_envs"]["phage_all"]
     output:
         masked_contigs = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "masked_contigs.fasta"),
         mask_stats = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "masking_stats.txt")
@@ -122,19 +122,16 @@ rule mask_prophage_regions:
         """
         # Check if there are any prophages to mask
         if [ -s {input.prophage_bed} ]; then
-            # Convert BED to bbmask format (contig:start-end)
-            # BED is 0-based, bbmask expects 1-based
-            awk '{{print "NODE_" $1 "_:" ($2+1) "-" $3}}' {input.prophage_bed} > {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.txt
-
             # Count regions to mask
-            n_regions=$(wc -l < {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.txt)
+            n_regions=$(wc -l < {input.prophage_bed})
             echo "Masking $n_regions prophage regions" > {output.mask_stats}
 
-            # Use bbmask.sh to mask regions with N's
-            bbmask.sh in={input.contigs} out={output.masked_contigs} \
-            maskrepeats=f \
-            mci={config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.txt \
-            2>> {log}
+            # Convert BED to proper format for bedtools
+            # BED columns: contig start end, need to add NODE_ prefix
+            awk '{{print "NODE_" $1 "\t" $2 "\t" $3}}' {input.prophage_bed} > {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.bed
+
+            # Use bedtools maskfasta to mask regions with N's
+            bedtools maskfasta -fi {input.contigs} -bed {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.bed -fo {output.masked_contigs} 2>> {log}
 
             # Report masking statistics
             echo "Original contigs: $(grep -c '^>' {input.contigs})" >> {output.mask_stats}
