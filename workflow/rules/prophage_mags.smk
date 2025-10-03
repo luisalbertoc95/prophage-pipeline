@@ -59,26 +59,6 @@ rule phispy_per_mag:
         fi
         """
 
-rule genomad_per_mag:
-    input:
-        bin_file = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}_DASTool_bins", "bin.{bin_num}.fa"),
-        db = config["genomad_database"]
-    threads: 8
-    conda: config["conda_envs"]["genomad"]
-    output:
-        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad", "bin.{bin_num}"))
-    log:
-        os.path.join(config["outdir"], "logs", "genomad_per_mag", "{sample}_bin.{bin_num}.log")
-    benchmark:
-        os.path.join(config["outdir"], "benchmarks", "genomad_per_mag", "{sample}_bin.{bin_num}_bmrk.txt")
-    shell:
-        """
-        mkdir -p {output}
-        genomad end-to-end --cleanup --threads {threads} \
-        --splits 8 \
-        {input.bin_file} {output} {input.db} 2> {log}
-        """
-
 # Checkpoint to dynamically determine which bins exist
 checkpoint get_mag_bins:
     input:
@@ -101,22 +81,92 @@ def aggregate_mag_prophage_inputs(wildcards):
         bin_nums = [line.strip() for line in f if line.strip()]
 
     return {
-        "genomad": expand(os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "mags", "genomad", "bin.{bin_num}"), bin_num=bin_nums),
         "phispy": expand(os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "mags", "phispy", "bin.{bin_num}"), bin_num=bin_nums),
         "bin_list": checkpoint_output
     }
 
+rule map_genomad_to_bins:
+    input:
+        genomad_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad_complete"),
+        bin_list = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "bin_list.txt")
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        genomad_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad_all.bed"),
+        genomad_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad_prophages.fasta")
+    log:
+        os.path.join(config["outdir"], "logs", "map_genomad_to_bins", "{sample}.log")
+    shell:
+        """
+        # Find GeNomad provirus predictions
+        provirus_tsv=$(find {input.genomad_dir} -name "*_provirus.tsv" | head -1)
+        provirus_fna=$(find {input.genomad_dir} -name "*_provirus.fna" | head -1)
+
+        # Initialize output files
+        touch {output.genomad_bed}
+        touch {output.genomad_fasta}
+
+        if [ -f "$provirus_tsv" ] && [ -s "$provirus_tsv" ]; then
+            # Build contig-to-bin mapping from bin FASTA files
+            bin_dir={config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins
+
+            # Create temporary mapping file
+            temp_map=$(mktemp)
+
+            # For each bin, extract contig IDs
+            while IFS= read -r bin_num; do
+                bin_file="$bin_dir/bin.$bin_num.fa"
+                if [ -f "$bin_file" ]; then
+                    grep "^>" "$bin_file" | sed 's/^>//' | while read contig_name; do
+                        # Extract NODE number from contig name
+                        if [[ "$contig_name" =~ NODE_([0-9]+)_ ]]; then
+                            echo "${{BASH_REMATCH[1]}}\tbin.$bin_num"
+                        fi
+                    done >> "$temp_map"
+                fi
+            done < {input.bin_list}
+
+            # Parse GeNomad provirus predictions and assign to bins
+            awk 'NR>1 {{
+                if (match($2, /NODE_([0-9]+)_/, arr)) {{
+                    print arr[1] "\t" $3 "\t" $4 "\tgenomad\t" NR-1
+                }}
+            }}' "$provirus_tsv" | while IFS=$'\t' read -r contig start end tool pred_id; do
+                # Look up bin for this contig
+                bin=$(grep -P "^$contig\t" "$temp_map" | cut -f2 | head -1)
+                if [ -n "$bin" ]; then
+                    echo -e "$contig\t$start\t$end\t$tool\t$pred_id\t$bin" >> {output.genomad_bed}
+                fi
+            done
+
+            # Extract only binned prophage sequences from FASTA
+            if [ -f "$provirus_fna" ] && [ -s {output.genomad_bed} ]; then
+                # Get list of prediction IDs that are in bins
+                temp_binned_ids=$(mktemp)
+                awk '{{print $5}}' {output.genomad_bed} > "$temp_binned_ids"
+
+                # Extract those sequences from FASTA
+                # GeNomad names sequences like: final_filtered_contigs|provirus_1
+                while read pred_id; do
+                    grep -A1 "|provirus_$pred_id" "$provirus_fna" || true
+                done < "$temp_binned_ids" >> {output.genomad_fasta}
+
+                rm -f "$temp_binned_ids"
+            fi
+
+            rm -f "$temp_map"
+        fi 2> {log}
+        """
+
 rule merge_mag_prophages:
     input:
         unpack(aggregate_mag_prophage_inputs),
+        genomad_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad_all.bed"),
         bin_list = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "bin_list.txt")
     params:
-        genomad_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["genomad"],
         phispy_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["phispy"]
     conda: config["conda_envs"]["phage_all"]
     output:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "merged_prophages.bed"),
-        genomad_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad_all.bed"),
         phispy_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_all.bed"),
         phispy_unique_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_unique.bed"),
         phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_unique_ids.txt")
@@ -124,29 +174,12 @@ rule merge_mag_prophages:
         os.path.join(config["outdir"], "logs", "merge_mag_prophages", "{sample}.log")
     shell:
         """
-        # Initialize empty BED files
-        touch {output.genomad_bed}
+        # Initialize empty BED file
         touch {output.phispy_bed}
 
-        # Extract GeNomad predictions from all bins
-        genomad_dirs=({params.genomad_dirs})
-        for genomad_dir in "${{genomad_dirs[@]}}"; do
-            bin_num=$(basename $genomad_dir | sed 's/bin\\.//;s/\\..*$//')
-            tsv_file=$(find $genomad_dir -name "*_provirus.tsv" -o -name "*_summary.tsv" | grep provirus | head -1)
-
-            if [ -f "$tsv_file" ]; then
-                awk -v bin="bin.$bin_num" 'NR>1 {{
-                    if (match($2, /NODE_([0-9]+)_/, arr)) {{
-                        print arr[1] "\t" $3 "\t" $4 "\tgenomad\t" NR-1 "\t" bin
-                    }}
-                }}' "$tsv_file" >> {output.genomad_bed}
-            fi
-        done 2>> {log}
-
         # Extract PhiSpy predictions from all bins
-        phispy_dirs=({params.phispy_dirs})
-        for phispy_dir in "${{phispy_dirs[@]}}"; do
-            bin_num=$(basename $phispy_dir | sed 's/bin\\.//;s/\\..*$//')
+        printf '%s\n' {params.phispy_dirs} | while IFS= read -r phispy_dir; do
+            bin_num=$(basename "$phispy_dir" | sed 's/bin\\.//;s/\\..*$//')
             tsv_file="$phispy_dir/prophage.tsv"
 
             if [ -f "$tsv_file" ]; then
@@ -159,9 +192,9 @@ rule merge_mag_prophages:
             fi
         done 2>> {log}
 
-        # Find PhiSpy predictions that DON'T overlap with GeNomad (same logic as current)
-        if [ -s {output.genomad_bed} ] && [ -s {output.phispy_bed} ]; then
-            bedtools intersect -a {output.phispy_bed} -b {output.genomad_bed} -v > {output.phispy_unique_bed} 2>> {log}
+        # Find PhiSpy predictions that DON'T overlap with GeNomad
+        if [ -s {input.genomad_bed} ] && [ -s {output.phispy_bed} ]; then
+            bedtools intersect -a {output.phispy_bed} -b {input.genomad_bed} -v > {output.phispy_unique_bed} 2>> {log}
         elif [ -s {output.phispy_bed} ]; then
             # No genomad predictions, all phispy are unique
             cp {output.phispy_bed} {output.phispy_unique_bed}
@@ -171,7 +204,7 @@ rule merge_mag_prophages:
         fi
 
         # Create merged BED: all GeNomad + unique PhiSpy
-        cat {output.genomad_bed} {output.phispy_unique_bed} > {output.merged_bed} 2>> {log}
+        cat {input.genomad_bed} {output.phispy_unique_bed} > {output.merged_bed} 2>> {log}
 
         # Extract PhiSpy unique IDs for FASTA extraction
         if [ -s {output.phispy_unique_bed} ]; then
@@ -184,10 +217,10 @@ rule merge_mag_prophages:
 rule extract_mag_prophage_sequences:
     input:
         merged_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "merged_prophages.bed"),
+        genomad_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad_prophages.fasta"),
         phispy_unique_ids = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "phispy_unique_ids.txt"),
         bin_list = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "bin_list.txt")
     params:
-        genomad_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["genomad"],
         phispy_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["phispy"]
     conda: config["conda_envs"]["phage_all"]
     output:
@@ -197,19 +230,17 @@ rule extract_mag_prophage_sequences:
         os.path.join(config["outdir"], "logs", "extract_mag_prophages", "{sample}.log")
     shell:
         """
-        # Collect all GeNomad prophage FASTA files
-        genomad_dirs=({params.genomad_dirs})
-        for genomad_dir in "${{genomad_dirs[@]}}"; do
-            fna_file=$(find $genomad_dir -name "*_provirus.fna" | head -1)
-            if [ -f "$fna_file" ]; then
-                cat "$fna_file" >> {output.prophage_fasta}
-            fi
-        done 2> {log}
+        # Initialize output FASTA
+        > {output.prophage_fasta}
+
+        # Copy GeNomad prophage sequences (already filtered to binned contigs)
+        if [ -s {input.genomad_fasta} ]; then
+            cat {input.genomad_fasta} >> {output.prophage_fasta} 2> {log}
+        fi
 
         # Collect unique PhiSpy prophage sequences
         if [ -s {input.phispy_unique_ids} ]; then
-            phispy_dirs=({params.phispy_dirs})
-            for phispy_dir in "${{phispy_dirs[@]}}"; do
+            printf '%s\n' {params.phispy_dirs} | while IFS= read -r phispy_dir; do
                 fasta_file="$phispy_dir/phage.fasta"
                 if [ -f "$fasta_file" ]; then
                     cat "$fasta_file" >> {output.prophage_fasta}

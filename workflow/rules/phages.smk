@@ -10,6 +10,27 @@ rule genomad_db:
     shell:
         "genomad download-database ref"
 
+# Run GeNomad on complete assembly for full metagenomic context
+rule genomad_complete_assembly:
+    input:
+        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
+        db = config["genomad_database"]
+    threads: 24
+    conda: config["conda_envs"]["genomad"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad_complete"))
+    log:
+        os.path.join(config["outdir"], "logs", "genomad_complete_assembly", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "genomad_complete_assembly", "{sample}_bmrk.txt")
+    shell:
+        """
+        mkdir -p {output}
+        genomad end-to-end --cleanup --threads {threads} \
+        --splits 16 \
+        {input.contigs} {output} {input.db} 2> {log}
+        """
+
 rule download_bakta_db:
     output: directory(config["bakta_database"])
     conda: config["conda_envs"]["bakta"]
