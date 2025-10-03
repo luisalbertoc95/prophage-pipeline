@@ -132,7 +132,7 @@ rule map_genomad_to_bins:
                 }}
             }}' "$provirus_tsv" | while IFS=$'\t' read -r contig start end tool pred_id; do
                 # Look up bin for this contig
-                bin=$(grep -P "^$contig\t" "$temp_map" | cut -f2 | head -1)
+                bin=$(awk -v c="$contig" '$1 == c {{print $2; exit}}' "$temp_map")
                 if [ -n "$bin" ]; then
                     echo -e "$contig\t$start\t$end\t$tool\t$pred_id\t$bin" >> {output.genomad_bed}
                 fi
