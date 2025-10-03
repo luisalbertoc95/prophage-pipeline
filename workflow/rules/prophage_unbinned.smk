@@ -133,7 +133,7 @@ rule mask_prophage_regions:
             # Use bbmask.sh to mask regions with N's
             bbmask.sh in={input.contigs} out={output.masked_contigs} \
             maskrepeats=f \
-            maskfile={config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.txt \
+            mci={config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.txt \
             2>> {log}
 
             # Report masking statistics
