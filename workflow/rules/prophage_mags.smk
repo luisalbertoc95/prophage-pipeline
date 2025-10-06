@@ -36,6 +36,25 @@ rule bakta_per_mag:
         --threads {threads} {input.bin_file} 2> {log}
         """
 
+rule genomad_per_mag:
+    input:
+        bin_file = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}_DASTool_bins", "bin.{bin_num}.fa"),
+        db = config["genomad_database"]
+    threads: 24
+    conda: config["conda_envs"]["genomad"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad", "bin.{bin_num}"))
+    log:
+        os.path.join(config["outdir"], "logs", "genomad_per_mag", "{sample}_bin.{bin_num}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "genomad_per_mag", "{sample}_bin.{bin_num}_bmrk.txt")
+    shell:
+        """
+        mkdir -p {output}
+        genomad end-to-end --cleanup --threads {threads} \
+        {input.bin_file} {output} {input.db} 2> {log}
+        """
+
 rule phispy_per_mag:
     input:
         bakta_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "bakta", "bin.{bin_num}")
@@ -81,80 +100,50 @@ def aggregate_mag_prophage_inputs(wildcards):
         bin_nums = [line.strip() for line in f if line.strip()]
 
     return {
+        "genomad": expand(os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "mags", "genomad", "bin.{bin_num}"), bin_num=bin_nums),
         "phispy": expand(os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "mags", "phispy", "bin.{bin_num}"), bin_num=bin_nums),
         "bin_list": checkpoint_output
     }
 
-rule map_genomad_to_bins:
+rule collect_genomad_per_mag:
     input:
-        genomad_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "genomad_complete"),
-        bin_list = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "bin_list.txt")
+        unpack(aggregate_mag_prophage_inputs)
+    params:
+        genomad_dirs = lambda wildcards: aggregate_mag_prophage_inputs(wildcards)["genomad"]
     conda: config["conda_envs"]["phage_all"]
     output:
         genomad_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad_all.bed"),
         genomad_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "genomad_prophages.fasta")
     log:
-        os.path.join(config["outdir"], "logs", "map_genomad_to_bins", "{sample}.log")
+        os.path.join(config["outdir"], "logs", "collect_genomad_per_mag", "{sample}.log")
     shell:
         """
-        # Find GeNomad provirus predictions
-        provirus_tsv=$(find {input.genomad_dir} -name "*_provirus.tsv" | head -1)
-        provirus_fna=$(find {input.genomad_dir} -name "*_provirus.fna" | head -1)
-
         # Initialize output files
-        touch {output.genomad_bed}
-        touch {output.genomad_fasta}
+        > {output.genomad_bed}
+        > {output.genomad_fasta}
 
-        if [ -f "$provirus_tsv" ] && [ -s "$provirus_tsv" ]; then
-            # Build contig-to-bin mapping from bin FASTA files
-            bin_dir={config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins
+        # Collect GeNomad prophage predictions from each bin
+        printf '%s\n' {params.genomad_dirs} | while IFS= read -r genomad_dir; do
+            bin_num=$(basename "$genomad_dir" | sed 's/bin\\.//;s/\\..*$//')
 
-            # Create temporary mapping file
-            temp_map=$(mktemp)
+            # Find provirus predictions for this bin
+            provirus_tsv=$(find "$genomad_dir" -name "*_provirus.tsv" 2>/dev/null | head -1)
+            provirus_fna=$(find "$genomad_dir" -name "*_provirus.fna" 2>/dev/null | head -1)
 
-            # For each bin, extract contig IDs
-            while IFS= read -r bin_num; do
-                bin_file="$bin_dir/bin.$bin_num.fa"
-                if [ -f "$bin_file" ]; then
-                    grep "^>" "$bin_file" | sed 's/^>//' | while read contig_name; do
-                        # Extract NODE number from contig name
-                        if [[ "$contig_name" =~ NODE_([0-9]+)_ ]]; then
-                            echo "${{BASH_REMATCH[1]}}\tbin.$bin_num"
-                        fi
-                    done >> "$temp_map"
+            if [ -f "$provirus_tsv" ] && [ -s "$provirus_tsv" ]; then
+                # Extract prophage coordinates and add bin assignment
+                awk -v bin="bin.$bin_num" 'NR>1 {{
+                    if (match($2, /NODE_([0-9]+)_/, arr)) {{
+                        print arr[1] "\t" $3 "\t" $4 "\tgenomad\t" NR-1 "\t" bin
+                    }}
+                }}' "$provirus_tsv" >> {output.genomad_bed} 2>> {log}
+
+                # Collect prophage sequences
+                if [ -f "$provirus_fna" ] && [ -s "$provirus_fna" ]; then
+                    cat "$provirus_fna" >> {output.genomad_fasta} 2>> {log}
                 fi
-            done < {input.bin_list}
-
-            # Parse GeNomad provirus predictions and assign to bins
-            awk 'NR>1 {{
-                if (match($2, /NODE_([0-9]+)_/, arr)) {{
-                    print arr[1] "\t" $3 "\t" $4 "\tgenomad\t" NR-1
-                }}
-            }}' "$provirus_tsv" | while IFS=$'\t' read -r contig start end tool pred_id; do
-                # Look up bin for this contig
-                bin=$(awk -v c="$contig" '$1 == c {{print $2; exit}}' "$temp_map")
-                if [ -n "$bin" ]; then
-                    echo -e "$contig\t$start\t$end\t$tool\t$pred_id\t$bin" >> {output.genomad_bed}
-                fi
-            done
-
-            # Extract only binned prophage sequences from FASTA
-            if [ -f "$provirus_fna" ] && [ -s {output.genomad_bed} ]; then
-                # Get list of prediction IDs that are in bins
-                temp_binned_ids=$(mktemp)
-                awk '{{print $5}}' {output.genomad_bed} > "$temp_binned_ids"
-
-                # Extract those sequences from FASTA
-                # GeNomad names sequences like: final_filtered_contigs|provirus_1
-                while read pred_id; do
-                    grep -A1 "|provirus_$pred_id" "$provirus_fna" || true
-                done < "$temp_binned_ids" >> {output.genomad_fasta}
-
-                rm -f "$temp_binned_ids"
             fi
-
-            rm -f "$temp_map"
-        fi 2> {log}
+        done
         """
 
 rule merge_mag_prophages:

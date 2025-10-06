@@ -33,6 +33,12 @@ set-resources:
         time: 180 
     genomad:
         mem: 50G
+    genomad_per_mag:
+        mem: 50G
+    genomad_unbinned:
+        mem: 50G
+    genomad_complete_assembly_ORIGINAL:
+        mem: 50G
     checkm:
         mem: 50G
     mmseqs_taxonomy_all_contigs:
