@@ -106,7 +106,8 @@ rule checkv_all_prophages:
     threads: 24
     conda: config["conda_envs"]["checkv"]
     output:
-        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_all_prophages"))
+        quality_summary = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_all_prophages", "quality_summary.tsv"),
+        outdir = directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_all_prophages"))
     log:
         os.path.join(config["outdir"], "logs", "checkv_all_prophages", "{sample}.log")
     benchmark:
@@ -116,7 +117,7 @@ rule checkv_all_prophages:
         # Run checkv on all prophages
         checkv end_to_end \
         {input.all_prophages} \
-        {output} \
+        {output.outdir} \
         -t {threads} \
         -d {input.db} 2> {log}
         """
@@ -129,7 +130,8 @@ rule checkv_free_phages:
     threads: 24
     conda: config["conda_envs"]["checkv"]
     output:
-        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_free_phages"))
+        quality_summary = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_free_phages", "quality_summary.tsv"),
+        outdir = directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_free_phages"))
     log:
         os.path.join(config["outdir"], "logs", "checkv_free_phages", "{sample}.log")
     benchmark:
@@ -139,7 +141,7 @@ rule checkv_free_phages:
         # Run checkv on free phages
         checkv end_to_end \
         {input.free_phages} \
-        {output} \
+        {output.outdir} \
         -t {threads} \
         -d {input.db} 2> {log}
         """
