@@ -98,6 +98,52 @@ rule final_prophage_outputs:
         cat {input.mag_prophages} {input.unbinned_prophages} > {output.all_prophages}
         """
 
+# CheckV quality assessment for all prophages (MAG + unbinned combined)
+rule checkv_all_prophages:
+    input:
+        all_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "all_prophages_combined.fasta"),
+        db = config["checkv_database"]
+    threads: 24
+    conda: config["conda_envs"]["checkv"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_all_prophages"))
+    log:
+        os.path.join(config["outdir"], "logs", "checkv_all_prophages", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "checkv_all_prophages", "{sample}_bmrk.txt")
+    shell:
+        """
+        # Run checkv on all prophages
+        checkv end_to_end \
+        {input.all_prophages} \
+        {output} \
+        -t {threads} \
+        -d {input.db} 2> {log}
+        """
+
+# CheckV quality assessment for free phages only
+rule checkv_free_phages:
+    input:
+        free_phages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "free_phages.fasta"),
+        db = config["checkv_database"]
+    threads: 24
+    conda: config["conda_envs"]["checkv"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_free_phages"))
+    log:
+        os.path.join(config["outdir"], "logs", "checkv_free_phages", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "checkv_free_phages", "{sample}_bmrk.txt")
+    shell:
+        """
+        # Run checkv on free phages
+        checkv end_to_end \
+        {input.free_phages} \
+        {output} \
+        -t {threads} \
+        -d {input.db} 2> {log}
+        """
+
 # Optional comparison rule: Compare per-MAG vs complete assembly GeNomad approaches
 rule compare_genomad_approaches:
     input:
@@ -177,7 +223,9 @@ rule run_everything:
     input:
         coverm_stats = os.path.join(config["outdir"], "{sample}", "coverm", "{sample}_stats.txt"),
         checkm = os.path.join(config["outdir"], "{sample}", "binning", "checkm"),
-        checkv = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv"),
+        checkv_unbinned = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv"),
+        checkv_all_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_all_prophages"),
+        checkv_free_phages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "checkv_free_phages"),
         all_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "all_prophages_combined.fasta"),
         prophages_from_mags = os.path.join(config["outdir"], "{sample}", "phage_analysis", "prophages_from_mags.fasta"),
         prophages_from_unbinned = os.path.join(config["outdir"], "{sample}", "phage_analysis", "prophages_from_unbinned.fasta"),
