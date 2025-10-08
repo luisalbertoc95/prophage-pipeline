@@ -15,10 +15,14 @@ include: "rules/prophage_mags.smk"
 include: "rules/prophage_unbinned.smk"
 include: "rules/taxonomy.smk"
 include: "rules/phages.smk"
+include: "rules/reporting.smk"
 
 def get_final_outputs():
     """Determine which outputs to generate based on configuration"""
-    outputs = [expand(os.path.join(config["outdir"], "{sample}", "phage_analysis", "done"), sample = SAMPLES)]
+    outputs = [
+        expand(os.path.join(config["outdir"], "{sample}", "phage_analysis", "done"), sample = SAMPLES),
+        os.path.join(config["outdir"], "pipeline_summary_report.html")
+    ]
 
     # Optionally add comparison outputs if requested
     if config.get("run_genomad_comparison", False):
