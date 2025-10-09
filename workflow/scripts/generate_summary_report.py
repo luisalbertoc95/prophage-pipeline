@@ -130,7 +130,7 @@ def parse_checkv_quality(samples, outdir, checkv_type='all_prophages'):
     return pd.DataFrame(data) if data else pd.DataFrame(columns=['sample', 'contig', 'checkv_quality', 'completeness', 'contamination'])
 
 def parse_checkm_quality(samples, outdir):
-    """Parse CheckM bin quality results"""
+    """Parse CheckM bin quality results (excludes unbinned contigs)"""
     data = []
 
     for sample in samples:
@@ -142,6 +142,11 @@ def parse_checkm_quality(samples, outdir):
                 for _, row in df.iterrows():
                     # CheckM output columns may vary, adapt as needed
                     bin_id = row.get('Bin Id', row.iloc[0] if len(row) > 0 else 'unknown')
+
+                    # Skip unbinned contigs (identified by NODE_ in name)
+                    if 'NODE_' in str(bin_id):
+                        continue
+
                     completeness = row.get('Completeness', row.iloc[13] if len(row) > 13 else 0)
                     contamination = row.get('Contamination', row.iloc[14] if len(row) > 14 else 0)
 
@@ -232,6 +237,7 @@ def create_summary_cards(prophage_df, free_phage_df, checkm_df, assembly_df):
     unbinned_prophage_stats = calculate_stats(prophage_df['unbinned_prophages'].tolist())
     free_phage_stats = calculate_stats(free_phage_df['free_phages'].tolist())
     mags_stats = calculate_stats(checkm_df.groupby('sample').size().tolist()) if len(checkm_df) > 0 else calculate_stats([])
+    mags_with_prophages_stats = calculate_stats(prophage_df['mags_with_prophages'].tolist())
     n50_stats = calculate_stats(assembly_df['n50'].tolist())
 
     # High-quality MAGs (>90% complete, <5% contamination)
@@ -268,10 +274,10 @@ def create_summary_cards(prophage_df, free_phage_df, checkm_df, assembly_df):
             <div class="stat-detail">Mean: {format_stat(free_phage_stats['mean'])} ± {format_stat(free_phage_stats['std'])}</div>
         </div>
         <div class="card">
-            <h3>Total MAGs</h3>
-            <div class="stat-value">{format_stat(len(checkm_df))}</div>
-            <div class="stat-detail">High-quality: {hq_mags}</div>
-            <div class="stat-detail">Mean/sample: {format_stat(mags_stats['mean'])}</div>
+            <h3>MAGs with Prophages</h3>
+            <div class="stat-value">{format_stat(mags_with_prophages_stats['total'])}</div>
+            <div class="stat-detail">Mean/sample: {format_stat(mags_with_prophages_stats['mean'])}</div>
+            <div class="stat-detail">Total MAGs: {format_stat(len(checkm_df))}</div>
         </div>
         <div class="card">
             <h3>Assembly N50 (mean)</h3>
@@ -289,20 +295,20 @@ def create_stats_table(prophage_df, free_phage_df, checkv_df, checkm_df, assembl
     rows = []
 
     # Prophage metrics
-    rows.append(create_stats_row("Prophages per sample", prophage_df['total_prophages'].tolist()))
-    rows.append(create_stats_row("MAG prophages per sample", prophage_df['mag_prophages'].tolist()))
-    rows.append(create_stats_row("Unbinned prophages per sample", prophage_df['unbinned_prophages'].tolist()))
-    rows.append(create_stats_row("Free phages per sample", free_phage_df['free_phages'].tolist()))
+    rows.append(create_stats_row("Prophages", prophage_df['total_prophages'].tolist()))
+    rows.append(create_stats_row("MAG prophages", prophage_df['mag_prophages'].tolist()))
+    rows.append(create_stats_row("Unbinned prophages", prophage_df['unbinned_prophages'].tolist()))
+    rows.append(create_stats_row("Free phages", free_phage_df['free_phages'].tolist()))
 
     # Assembly metrics
-    rows.append(create_stats_row("Total contigs per sample", assembly_df['n_contigs'].tolist()))
+    rows.append(create_stats_row("Total contigs", assembly_df['n_contigs'].tolist()))
     rows.append(create_stats_row("Assembly N50 (bp)", assembly_df['n50'].tolist()))
     rows.append(create_stats_row("Total assembly length (bp)", assembly_df['total_length'].tolist()))
 
     # MAG metrics
     if len(checkm_df) > 0:
         mags_per_sample = checkm_df.groupby('sample').size().tolist()
-        rows.append(create_stats_row("MAGs per sample", mags_per_sample))
+        rows.append(create_stats_row("MAGs", mags_per_sample))
         rows.append(create_stats_row("MAG completeness (%)", checkm_df['completeness'].tolist(), decimals=1))
         rows.append(create_stats_row("MAG contamination (%)", checkm_df['contamination'].tolist(), decimals=1))
 
@@ -319,8 +325,7 @@ def create_stats_table(prophage_df, free_phage_df, checkv_df, checkm_df, assembl
     <table class="stats-table">
         <thead>
             <tr>
-                <th>Metric</th>
-                <th>Total</th>
+                <th>Metric (per sample)</th>
                 <th>Mean</th>
                 <th>Median</th>
                 <th>StdDev</th>
@@ -341,13 +346,18 @@ def create_stats_table(prophage_df, free_phage_df, checkv_df, checkm_df, assembl
     return table_html
 
 def create_stats_row(metric_name, values, decimals=0):
-    """Create a single row for the statistics table"""
+    """Create a single row for the statistics table
+
+    Args:
+        metric_name: Name of the metric
+        values: List of values (per sample)
+        decimals: Number of decimal places for formatting
+    """
     stats = calculate_stats(values)
 
     return f"""
             <tr>
                 <td>{metric_name}</td>
-                <td>{format_stat(stats['total'], decimals)}</td>
                 <td>{format_stat(stats['mean'], decimals)}</td>
                 <td>{format_stat(stats['median'], decimals)}</td>
                 <td>{format_stat(stats['std'], decimals)}</td>
@@ -673,7 +683,7 @@ def generate_html_report(prophage_df, free_phage_df, checkv_all_df, checkv_free_
             margin: 30px 0;
         }
         .card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #667eea;
             color: white;
             padding: 20px;
             border-radius: 8px;
