@@ -143,8 +143,10 @@ def parse_checkm_quality(samples, outdir):
                     # CheckM output columns may vary, adapt as needed
                     bin_id = row.get('Bin Id', row.iloc[0] if len(row) > 0 else 'unknown')
 
-                    # Skip unbinned contigs (identified by NODE_ in name)
-                    if 'NODE_' in str(bin_id):
+                    # Only include final DAS Tool refined bins (bin.1, bin.2, etc.)
+                    # Skip unbinned contigs (NODE_*) and pre-refinement bins (CONCOCT.bin.*, maxbin.*, etc.)
+                    bin_id_str = str(bin_id)
+                    if 'NODE_' in bin_id_str or not bin_id_str.startswith('bin.'):
                         continue
 
                     completeness = row.get('Completeness', row.iloc[13] if len(row) > 13 else 0)
