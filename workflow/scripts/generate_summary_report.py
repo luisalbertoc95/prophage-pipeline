@@ -394,38 +394,6 @@ def plot_prophages_per_sample(prophage_df):
 
     return fig.to_html(full_html=False, include_plotlyjs='cdn')
 
-def plot_prophage_box(prophage_df):
-    """Create box plot of prophage distribution"""
-
-    fig = go.Figure()
-
-    fig.add_trace(go.Box(
-        y=prophage_df['total_prophages'],
-        x=['Total Prophages'] * len(prophage_df),
-        name='Total'
-    ))
-
-    fig.add_trace(go.Box(
-        y=prophage_df['mag_prophages'],
-        x=['MAG Prophages'] * len(prophage_df),
-        name='MAG'
-    ))
-
-    fig.add_trace(go.Box(
-        y=prophage_df['unbinned_prophages'],
-        x=['Unbinned Prophages'] * len(prophage_df),
-        name='Unbinned'
-    ))
-
-    fig.update_layout(
-        title='Prophage Distribution Across Samples',
-        yaxis_title='Number of Prophages',
-        height=500,
-        showlegend=False
-    )
-
-    return fig.to_html(full_html=False, include_plotlyjs='cdn')
-
 def plot_detection_tools(prophage_df):
     """Create stacked bar chart of detection tool breakdown"""
 
@@ -440,6 +408,96 @@ def plot_detection_tools(prophage_df):
         xaxis_title='Sample',
         yaxis_title='Number of Prophages',
         height=500
+    )
+
+    return fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+def plot_free_phages_per_sample(free_phage_df):
+    """Create bar chart of free phages per sample"""
+
+    fig = go.Figure(data=[
+        go.Bar(
+            x=free_phage_df['sample'],
+            y=free_phage_df['free_phages'],
+            marker_color='#e67e22',
+            name='Free Phages'
+        )
+    ])
+
+    fig.update_layout(
+        title='Free Phages Per Sample',
+        xaxis_title='Sample',
+        yaxis_title='Number of Free Phages',
+        height=500,
+        showlegend=False
+    )
+
+    return fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+def plot_mags_per_sample(checkm_df):
+    """Create bar chart showing MAGs per sample"""
+
+    if len(checkm_df) == 0:
+        return "<p>No MAG data available</p>"
+
+    # Count MAGs per sample
+    mags_per_sample = checkm_df.groupby('sample').size().reset_index(name='mag_count')
+
+    fig = go.Figure(data=[
+        go.Bar(
+            x=mags_per_sample['sample'],
+            y=mags_per_sample['mag_count'],
+            marker_color='#16a085',
+            name='MAGs'
+        )
+    ])
+
+    fig.update_layout(
+        title='MAGs Per Sample',
+        xaxis_title='Sample',
+        yaxis_title='Number of MAGs',
+        height=500,
+        showlegend=False
+    )
+
+    return fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+def plot_checkv_comparison(checkv_all_df, checkv_free_df):
+    """Create side-by-side comparison of prophage vs free phage quality"""
+
+    if len(checkv_all_df) == 0 and len(checkv_free_df) == 0:
+        return "<p>No CheckV data available</p>"
+
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=('Prophage Completeness', 'Free Phage Completeness')
+    )
+
+    # Prophage completeness
+    if len(checkv_all_df) > 0:
+        prophage_comp = checkv_all_df[checkv_all_df['completeness'] > 0]
+        if len(prophage_comp) > 0:
+            fig.add_trace(
+                go.Box(y=prophage_comp['completeness'], name='Prophages', marker_color='#3498db'),
+                row=1, col=1
+            )
+
+    # Free phage completeness
+    if len(checkv_free_df) > 0:
+        free_comp = checkv_free_df[checkv_free_df['completeness'] > 0]
+        if len(free_comp) > 0:
+            fig.add_trace(
+                go.Box(y=free_comp['completeness'], name='Free Phages', marker_color='#e67e22'),
+                row=1, col=2
+            )
+
+    fig.update_yaxes(title_text="Completeness (%)", row=1, col=1)
+    fig.update_yaxes(title_text="Completeness (%)", row=1, col=2)
+
+    fig.update_layout(
+        title_text='Phage Quality Comparison (CheckV)',
+        height=400,
+        showlegend=False
     )
 
     return fig.to_html(full_html=False, include_plotlyjs='cdn')
@@ -537,36 +595,6 @@ def plot_checkm_scatter(checkm_df):
 
     return fig.to_html(full_html=False, include_plotlyjs='cdn')
 
-def plot_checkm_box(checkm_df):
-    """Create box plots for CheckM completeness and contamination"""
-
-    if len(checkm_df) == 0:
-        return "<p>No CheckM data available</p>"
-
-    fig = make_subplots(rows=1, cols=2, subplot_titles=('Completeness', 'Contamination'))
-
-    fig.add_trace(
-        go.Box(y=checkm_df['completeness'], name='Completeness', marker_color='#3498db'),
-        row=1, col=1
-    )
-
-    fig.add_trace(
-        go.Box(y=checkm_df['contamination'], name='Contamination', marker_color='#e74c3c'),
-        row=1, col=2
-    )
-
-    fig.update_xaxes(title_text="", row=1, col=1)
-    fig.update_xaxes(title_text="", row=1, col=2)
-    fig.update_yaxes(title_text="Percentage (%)", row=1, col=1)
-
-    fig.update_layout(
-        title_text='MAG Quality Distribution (CheckM)',
-        height=400,
-        showlegend=False
-    )
-
-    return fig.to_html(full_html=False, include_plotlyjs='cdn')
-
 def plot_taxonomy_phylum(taxonomy_df):
     """Create bar chart of host taxonomy at phylum level"""
 
@@ -638,20 +666,26 @@ def generate_html_report(prophage_df, free_phage_df, checkv_all_df, checkv_free_
     summary_cards = create_summary_cards(prophage_df, free_phage_df, checkm_df, assembly_df)
     stats_table = create_stats_table(prophage_df, free_phage_df, checkv_all_df, checkv_free_df, checkm_df, assembly_df)
 
-    prophage_bar = plot_prophages_per_sample(prophage_df)
-    prophage_box = plot_prophage_box(prophage_df)
-    detection_tools = plot_detection_tools(prophage_df)
+    # Assembly plots
+    n50_box = plot_assembly_n50_box(assembly_df)
 
+    # MAG plots
+    mags_per_sample = plot_mags_per_sample(checkm_df)
+    checkm_scatter = plot_checkm_scatter(checkm_df)
+
+    # Prophage plots
+    prophage_bar = plot_prophages_per_sample(prophage_df)
+    detection_tools = plot_detection_tools(prophage_df)
+    free_phages_bar = plot_free_phages_per_sample(free_phage_df)
+
+    # CheckV quality plots
     checkv_quality = plot_checkv_quality(checkv_all_df)
     checkv_comp_box = plot_checkv_completeness_box(checkv_all_df)
+    checkv_comparison = plot_checkv_comparison(checkv_all_df, checkv_free_df)
 
-    checkm_scatter = plot_checkm_scatter(checkm_df)
-    checkm_box = plot_checkm_box(checkm_df)
-
+    # Taxonomy plots
     taxonomy_phylum = plot_taxonomy_phylum(taxonomy_df)
     taxonomy_source = plot_taxonomy_source(taxonomy_df)
-
-    n50_box = plot_assembly_n50_box(assembly_df)
 
     # CSS styling
     css = """
@@ -761,23 +795,38 @@ def generate_html_report(prophage_df, free_phage_df, checkv_all_df, checkv_free_
             <h2>Statistical Summary</h2>
             {stats_table}
 
-            <h2>Prophage Detection</h2>
+            <h2>Assembly Overview</h2>
+
+            <div class="plot-container">
+                {n50_box}
+            </div>
+
+            <h2>MAG Quality & Binning</h2>
+
+            <div class="plot-container">
+                {mags_per_sample}
+            </div>
+
+            <div class="plot-container">
+                {checkm_scatter}
+            </div>
+
+            <h2>Phage Detection</h2>
 
             <div class="plot-container">
                 {prophage_bar}
             </div>
 
             <div class="plot-container">
-                {prophage_box}
-            </div>
-
-            <div class="plot-container">
                 {detection_tools}
             </div>
 
-            <h2>Quality Assessment</h2>
+            <div class="plot-container">
+                {free_phages_bar}
+            </div>
 
-            <h3>Prophage Quality (CheckV)</h3>
+            <h2>Phage Quality (CheckV)</h2>
+
             <div class="plot-container">
                 {checkv_quality}
             </div>
@@ -786,16 +835,11 @@ def generate_html_report(prophage_df, free_phage_df, checkv_all_df, checkv_free_
                 {checkv_comp_box}
             </div>
 
-            <h3>MAG Quality (CheckM)</h3>
             <div class="plot-container">
-                {checkm_scatter}
+                {checkv_comparison}
             </div>
 
-            <div class="plot-container">
-                {checkm_box}
-            </div>
-
-            <h2>Taxonomy</h2>
+            <h2>Prophage Host Taxonomy</h2>
 
             <div class="plot-container">
                 {taxonomy_phylum}
@@ -803,12 +847,6 @@ def generate_html_report(prophage_df, free_phage_df, checkv_all_df, checkv_free_
 
             <div class="plot-container">
                 {taxonomy_source}
-            </div>
-
-            <h2>Assembly Statistics</h2>
-
-            <div class="plot-container">
-                {n50_box}
             </div>
 
             <div class="timestamp">
