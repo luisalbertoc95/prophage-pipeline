@@ -60,9 +60,8 @@ rule identify_unbinned_genomad:
         genomad_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "genomad")
     conda: config["conda_envs"]["phage_all"]
     output:
-        prophage_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "prophages.bed"),
-        prophage_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "prophages.fasta"),
-        prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "prophage_table.tsv")
+        genomad_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "genomad_prophages.bed"),
+        genomad_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "genomad_prophages.fasta")
     log:
         os.path.join(config["outdir"], "logs", "identify_unbinned_genomad", "{sample}.log")
     shell:
@@ -72,9 +71,8 @@ rule identify_unbinned_genomad:
         provirus_fna=$(find {input.genomad_dir} -name "*_provirus.fna" | head -1)
 
         # Initialize output files
-        touch {output.prophage_bed}
-        touch {output.prophage_fasta}
-        echo -e "contig\tstart\tend\ttool\tbin\tsource" > {output.prophage_table}
+        touch {output.genomad_bed}
+        touch {output.genomad_fasta}
 
         if [ -f "$provirus_tsv" ] && [ -s "$provirus_tsv" ]; then
             # Parse GeNomad provirus predictions
@@ -82,16 +80,66 @@ rule identify_unbinned_genomad:
                 if (match($2, /NODE_([0-9]+)_/, arr)) {{
                     print arr[1] "\t" $3 "\t" $4 "\tgenomad\t" NR-1 "\tnone"
                 }}
-            }}' "$provirus_tsv" > {output.prophage_bed} 2> {log}
+            }}' "$provirus_tsv" > {output.genomad_bed} 2> {log}
 
             # Copy prophage sequences
             if [ -f "$provirus_fna" ] && [ -s "$provirus_fna" ]; then
-                cp "$provirus_fna" {output.prophage_fasta} 2>> {log}
+                cp "$provirus_fna" {output.genomad_fasta} 2>> {log}
             fi
-
-            # Create prophage table with source column
-            awk 'BEGIN {{OFS="\t"}} {{print $1, $2, $3, $4, $6, "unbinned"}}' {output.prophage_bed} >> {output.prophage_table}
         fi 2>> {log}
+        """
+
+rule merge_unbinned_prophages:
+    input:
+        genomad_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "genomad_prophages.bed"),
+        genomad_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "genomad_prophages.fasta"),
+        checkv_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv_prophages.bed"),
+        checkv_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv_prophages.fasta")
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        prophage_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "prophages.bed"),
+        prophage_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "prophages.fasta"),
+        prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "prophage_table.tsv"),
+        checkv_unique_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv_unique.bed")
+    log:
+        os.path.join(config["outdir"], "logs", "merge_unbinned_prophages", "{sample}.log")
+    shell:
+        """
+        # Find CheckV predictions that DON'T overlap with GeNomad
+        if [ -s {input.genomad_bed} ] && [ -s {input.checkv_bed} ]; then
+            # Use bedtools to find non-overlapping CheckV predictions
+            bedtools intersect -a {input.checkv_bed} -b {input.genomad_bed} -v > {output.checkv_unique_bed} 2>> {log}
+        elif [ -s {input.checkv_bed} ]; then
+            # No GeNomad predictions, all CheckV are unique
+            cp {input.checkv_bed} {output.checkv_unique_bed}
+        else
+            # No CheckV predictions
+            touch {output.checkv_unique_bed}
+        fi
+
+        # Merge: all GeNomad + unique CheckV
+        cat {input.genomad_bed} {output.checkv_unique_bed} > {output.prophage_bed} 2>> {log}
+
+        # Merge FASTA sequences: GeNomad + unique CheckV
+        > {output.prophage_fasta}
+        if [ -s {input.genomad_fasta} ]; then
+            cat {input.genomad_fasta} >> {output.prophage_fasta}
+        fi
+
+        # Extract unique CheckV sequences if any
+        if [ -s {output.checkv_unique_bed} ]; then
+            # Get list of unique CheckV provirus IDs
+            awk '{{print $5}}' {output.checkv_unique_bed} > {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/checkv_unique_ids.txt
+
+            # Extract those sequences from CheckV FASTA
+            if [ -s {input.checkv_fasta} ]; then
+                seqkit grep -f {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/checkv_unique_ids.txt {input.checkv_fasta} >> {output.prophage_fasta} 2>> {log}
+            fi
+        fi
+
+        # Create prophage table with source column
+        echo -e "contig\tstart\tend\ttool\tbin\tsource" > {output.prophage_table}
+        awk 'BEGIN {{OFS="\t"}} {{print $1, $2, $3, $4, $6, "unbinned"}}' {output.prophage_bed} >> {output.prophage_table}
         """
 
 rule extract_free_phages:
@@ -139,7 +187,7 @@ rule extract_free_phages:
 rule mask_prophage_regions:
     input:
         contigs = os.path.join(config["outdir"], "{sample}", "binning", "filt_4000_seqs_to_keep.fasta"),
-        prophage_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "prophages.bed")
+        prophage_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "genomad_prophages.bed")
     conda: config["conda_envs"]["phage_all"]
     output:
         masked_contigs = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "masked_contigs.fasta"),
@@ -168,6 +216,67 @@ rule mask_prophage_regions:
             # No prophages to mask, just copy original contigs
             echo "No prophages found - no masking needed" > {output.mask_stats}
             cp {input.contigs} {output.masked_contigs}
+        fi
+        """
+
+rule checkv_prophage_prediction_unbinned:
+    input:
+        unbinned_contigs = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "unbinned_contigs.fasta"),
+        db = config["checkv_database"]
+    threads: 24
+    conda: config["conda_envs"]["checkv"]
+    output:
+        directory(os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv_prophage_prediction"))
+    log:
+        os.path.join(config["outdir"], "logs", "checkv_prophage_prediction_unbinned", "{sample}.log")
+    benchmark:
+        os.path.join(config["outdir"], "benchmarks", "checkv_prophage_prediction_unbinned", "{sample}_bmrk.txt")
+    shell:
+        """
+        # Run CheckV end_to_end on unbinned contigs to find additional prophages
+        # Uses same input as GeNomad - deduplication happens via bedtools intersect
+        checkv end_to_end \
+        {input.unbinned_contigs} \
+        {output} \
+        -t {threads} \
+        -d {input.db} 2> {log}
+        """
+
+rule extract_checkv_prophages_unbinned:
+    input:
+        checkv_dir = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv_prophage_prediction")
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        checkv_prophage_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv_prophages.bed"),
+        checkv_prophage_fasta = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "checkv_prophages.fasta")
+    log:
+        os.path.join(config["outdir"], "logs", "extract_checkv_prophages_unbinned", "{sample}.log")
+    shell:
+        """
+        # Initialize output files
+        touch {output.checkv_prophage_bed}
+        touch {output.checkv_prophage_fasta}
+
+        # Find CheckV provirus predictions
+        provirus_fna=$(find {input.checkv_dir} -name "proviruses.fna" 2>/dev/null | head -1)
+        provirus_tsv=$(find {input.checkv_dir} -name "proviruses.tsv" 2>/dev/null | head -1)
+
+        if [ -f "$provirus_fna" ] && [ -s "$provirus_fna" ] && [ -f "$provirus_tsv" ] && [ -s "$provirus_tsv" ]; then
+            # Copy CheckV prophage sequences
+            cp "$provirus_fna" {output.checkv_prophage_fasta} 2> {log}
+
+            # Parse CheckV provirus TSV to create BED file with actual coordinates
+            # CheckV proviruses.tsv columns: contig_id, start, end, ...
+            awk 'NR>1 {{
+                if (match($1, /NODE_([0-9]+)_/, arr)) {{
+                    # Extract provirus ID from contig_id (format: contig|provirus_X)
+                    split($1, parts, "|")
+                    provirus_id = parts[2]
+                    print arr[1] "\t" $2 "\t" $3 "\tcheckv\t" provirus_id "\tnone"
+                }}
+            }}' "$provirus_tsv" > {output.checkv_prophage_bed} 2>> {log}
+        else
+            echo "No CheckV prophages found" >> {log}
         fi
         """
 
