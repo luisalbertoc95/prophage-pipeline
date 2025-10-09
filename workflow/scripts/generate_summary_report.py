@@ -255,41 +255,39 @@ def create_summary_cards(prophage_df, free_phage_df, checkm_df, assembly_df):
         <div class="card">
             <h3>Total Prophages</h3>
             <div class="stat-value">{format_stat(prophage_stats['total'])}</div>
-            <div class="stat-detail">Mean: {format_stat(prophage_stats['mean'])} ± {format_stat(prophage_stats['std'])}</div>
-            <div class="stat-detail">Range: [{format_stat(prophage_stats['min'])} - {format_stat(prophage_stats['max'])}]</div>
+            <div class="stat-detail">Across all samples</div>
         </div>
         <div class="card">
             <h3>MAG Prophages</h3>
             <div class="stat-value">{format_stat(mag_prophage_stats['total'])}</div>
-            <div class="stat-detail">Mean: {format_stat(mag_prophage_stats['mean'])} ± {format_stat(mag_prophage_stats['std'])}</div>
+            <div class="stat-detail">Across all samples</div>
         </div>
         <div class="card">
             <h3>Unbinned Prophages</h3>
             <div class="stat-value">{format_stat(unbinned_prophage_stats['total'])}</div>
-            <div class="stat-detail">Mean: {format_stat(unbinned_prophage_stats['mean'])} ± {format_stat(unbinned_prophage_stats['std'])}</div>
+            <div class="stat-detail">Across all samples</div>
         </div>
         <div class="card">
             <h3>Free Phages</h3>
             <div class="stat-value">{format_stat(free_phage_stats['total'])}</div>
-            <div class="stat-detail">Mean: {format_stat(free_phage_stats['mean'])} ± {format_stat(free_phage_stats['std'])}</div>
+            <div class="stat-detail">Across all samples</div>
         </div>
         <div class="card">
             <h3>MAGs with Prophages</h3>
             <div class="stat-value">{format_stat(mags_with_prophages_stats['total'])}</div>
-            <div class="stat-detail">Mean/sample: {format_stat(mags_with_prophages_stats['mean'])}</div>
             <div class="stat-detail">Total MAGs: {format_stat(len(checkm_df))}</div>
         </div>
         <div class="card">
-            <h3>Assembly N50 (mean)</h3>
-            <div class="stat-value">{format_stat(n50_stats['mean']/1000)} kb</div>
-            <div class="stat-detail">Range: [{format_stat(n50_stats['min']/1000)} - {format_stat(n50_stats['max']/1000)}] kb</div>
+            <h3>High-Quality MAGs</h3>
+            <div class="stat-value">{hq_mags}</div>
+            <div class="stat-detail">>90% complete, <5% contamination</div>
         </div>
     </div>
     """
 
     return cards_html
 
-def create_stats_table(prophage_df, free_phage_df, checkv_df, checkm_df, assembly_df):
+def create_stats_table(prophage_df, free_phage_df, checkv_all_df, checkv_free_df, checkm_df, assembly_df):
     """Create comprehensive statistical summary table"""
 
     rows = []
@@ -309,17 +307,26 @@ def create_stats_table(prophage_df, free_phage_df, checkv_df, checkm_df, assembl
     if len(checkm_df) > 0:
         mags_per_sample = checkm_df.groupby('sample').size().tolist()
         rows.append(create_stats_row("MAGs", mags_per_sample))
-        rows.append(create_stats_row("MAG completeness (%)", checkm_df['completeness'].tolist(), decimals=1))
-        rows.append(create_stats_row("MAG contamination (%)", checkm_df['contamination'].tolist(), decimals=1))
+        rows.append(create_stats_row("MAG completeness (%) [CheckM]", checkm_df['completeness'].tolist(), decimals=1))
+        rows.append(create_stats_row("MAG contamination (%) [CheckM]", checkm_df['contamination'].tolist(), decimals=1))
 
-    # CheckV metrics
-    if len(checkv_df) > 0:
-        checkv_comp = checkv_df[checkv_df['completeness'] > 0]['completeness'].tolist()
-        checkv_cont = checkv_df[checkv_df['contamination'] > 0]['contamination'].tolist()
+    # CheckV metrics for prophages
+    if len(checkv_all_df) > 0:
+        checkv_comp = checkv_all_df[checkv_all_df['completeness'] > 0]['completeness'].tolist()
+        checkv_cont = checkv_all_df[checkv_all_df['contamination'] > 0]['contamination'].tolist()
         if checkv_comp:
             rows.append(create_stats_row("Prophage completeness (%) [CheckV]", checkv_comp, decimals=1))
         if checkv_cont:
             rows.append(create_stats_row("Prophage contamination (%) [CheckV]", checkv_cont, decimals=1))
+
+    # CheckV metrics for free phages
+    if len(checkv_free_df) > 0:
+        free_checkv_comp = checkv_free_df[checkv_free_df['completeness'] > 0]['completeness'].tolist()
+        free_checkv_cont = checkv_free_df[checkv_free_df['contamination'] > 0]['contamination'].tolist()
+        if free_checkv_comp:
+            rows.append(create_stats_row("Free phage completeness (%) [CheckV]", free_checkv_comp, decimals=1))
+        if free_checkv_cont:
+            rows.append(create_stats_row("Free phage contamination (%) [CheckV]", free_checkv_cont, decimals=1))
 
     table_html = """
     <table class="stats-table">
@@ -393,22 +400,19 @@ def plot_prophage_box(prophage_df):
     fig.add_trace(go.Box(
         y=prophage_df['total_prophages'],
         x=['Total Prophages'] * len(prophage_df),
-        name='Total',
-        boxmean='sd'
+        name='Total'
     ))
 
     fig.add_trace(go.Box(
         y=prophage_df['mag_prophages'],
         x=['MAG Prophages'] * len(prophage_df),
-        name='MAG',
-        boxmean='sd'
+        name='MAG'
     ))
 
     fig.add_trace(go.Box(
         y=prophage_df['unbinned_prophages'],
         x=['Unbinned Prophages'] * len(prophage_df),
-        name='Unbinned',
-        boxmean='sd'
+        name='Unbinned'
     ))
 
     fig.update_layout(
@@ -484,7 +488,6 @@ def plot_checkv_completeness_box(checkv_df):
     fig = go.Figure(data=[go.Box(
         y=data['completeness'],
         name='Completeness',
-        boxmean='sd',
         marker_color='#3498db'
     )])
 
@@ -541,12 +544,12 @@ def plot_checkm_box(checkm_df):
     fig = make_subplots(rows=1, cols=2, subplot_titles=('Completeness', 'Contamination'))
 
     fig.add_trace(
-        go.Box(y=checkm_df['completeness'], name='Completeness', marker_color='#3498db', boxmean='sd'),
+        go.Box(y=checkm_df['completeness'], name='Completeness', marker_color='#3498db'),
         row=1, col=1
     )
 
     fig.add_trace(
-        go.Box(y=checkm_df['contamination'], name='Contamination', marker_color='#e74c3c', boxmean='sd'),
+        go.Box(y=checkm_df['contamination'], name='Contamination', marker_color='#e74c3c'),
         row=1, col=2
     )
 
@@ -611,7 +614,6 @@ def plot_assembly_n50_box(assembly_df):
     fig = go.Figure(data=[go.Box(
         y=assembly_df['n50'] / 1000,  # Convert to kb
         name='N50',
-        boxmean='sd',
         marker_color='#1abc9c'
     )])
 
@@ -632,7 +634,7 @@ def generate_html_report(prophage_df, free_phage_df, checkv_all_df, checkv_free_
 
     # Generate all plots
     summary_cards = create_summary_cards(prophage_df, free_phage_df, checkm_df, assembly_df)
-    stats_table = create_stats_table(prophage_df, free_phage_df, checkv_all_df, checkm_df, assembly_df)
+    stats_table = create_stats_table(prophage_df, free_phage_df, checkv_all_df, checkv_free_df, checkm_df, assembly_df)
 
     prophage_bar = plot_prophages_per_sample(prophage_df)
     prophage_box = plot_prophage_box(prophage_df)
@@ -751,7 +753,7 @@ def generate_html_report(prophage_df, free_phage_df, checkv_all_df, checkv_free_
         <div class="container">
             <h1>Prophage Pipeline Summary Report</h1>
 
-            <h2>Executive Summary</h2>
+            <h2>Overall Totals</h2>
             {summary_cards}
 
             <h2>Statistical Summary</h2>
