@@ -53,9 +53,13 @@ snakemake --profile ../profile/slurm/ --config reads=/path/to/reads outdir=/path
 - **Configurable Scope**: Taxonomy on prophage contigs only or all contigs
 
 ### Quality Control
-- **CheckV**: Prophage completeness and contamination assessment
+- **CheckV**: Prophage completeness and contamination assessment (separate assessments for prophages and free phages)
 - **CheckM**: Bin quality evaluation
 - **Coverage Analysis**: CoverM mapping statistics
+
+### Reporting
+- **Summary Report**: Interactive HTML report with statistical analysis and visualizations across all samples
+- **Helper Scripts**: Command-line tools for quick quality summaries (`checkv_quality_summary.sh`, `prophage_summary.sh`)
 
 ## Outputs
 
@@ -63,25 +67,35 @@ Each sample generates the following directory structure:
 ```
 {sample}/
 ├── assembly/           # Megahit assembly results
-├── binning/           # DAS Tool consensus bins and CheckM results  
+├── binning/           # DAS Tool consensus bins and CheckM results
 ├── coverm/            # Read mapping and coverage statistics
 ├── taxonomy/          # GTDB-Tk and MMseqs taxonomy results
 └── phage_analysis/    # Prophage detection and analysis
+    ├── mags/          # MAG-associated prophages
+    ├── unbinned/      # Unbinned contig prophages and free phages
+    ├── checkv_all_prophages/      # Quality assessment for all prophages
+    └── checkv_free_phages/        # Quality assessment for free phages
 ```
 
 ### Key Output Files
 
-#### Prophage Tables
-- `final_prophage_table.tsv`: Prophage coordinates with bin assignments
-- `final_prophage_table_with_host_taxonomy.tsv`: Prophages with host taxonomy (hybrid GTDB-Tk/MMseqs)
+#### Summary Report (Multi-sample)
+- `summary_report.html`: Interactive HTML report with statistical summaries and visualizations across all samples
 
-#### Sequences  
+#### Prophage Tables (Per-sample)
+- `final_prophage_table.tsv`: All prophage coordinates with bin assignments and detection tool info
+- `final_prophage_table_with_host_taxonomy.tsv`: Prophages with host taxonomy (hybrid GTDB-Tk/MMseqs)
+- `unbinned/free_phage_table.tsv`: Free phage sequences detected in unbinned contigs
+
+#### Sequences (Per-sample)
 - `final_prophage.fasta`: Extracted prophage sequences
 - `contigs_with_prophages.fasta`: Full contigs containing prophages
+- `unbinned/free_phage.fasta`: Free phage sequences
 
-#### Quality Assessment
-- `checkv/`: Prophage quality and completeness analysis
-- `checkm/`: Bin quality statistics
+#### Quality Assessment (Per-sample)
+- `checkv_all_prophages/quality_summary.tsv`: Completeness and contamination for all prophages
+- `checkv_free_phages/quality_summary.tsv`: Completeness and contamination for free phages
+- `binning/checkm/checkm_out.tsv`: MAG quality statistics
 
 ## Example Commands
 
