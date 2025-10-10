@@ -37,3 +37,10 @@ slurm-*.out
 checkv/
 gtdbtk/
 genomad/
+
+# Development documentation (keep local only)
+*_PLAN.md
+*_SUMMARY.md
+*_IMPLEMENTATION.md
+*_CHECKLIST.md
+*_BRANCH.md

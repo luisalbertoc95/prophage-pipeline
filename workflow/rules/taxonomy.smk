@@ -7,7 +7,8 @@ else:
 
 rule mmseqs_taxonomy_all_contigs:
     input:
-        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta")
+        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
+        masked_unbinned = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "masked_contigs.fasta")
     params:
         db = config["mmseqs_database"]
     threads: 24
@@ -22,9 +23,9 @@ rule mmseqs_taxonomy_all_contigs:
         """
         set -ue
         mkdir -p {output}
-        
-        echo "Running taxonomy on ALL contigs (comprehensive mode)" > {log}
-        cp {input.contigs} {output}/contigs_for_taxonomy.fasta
+
+        echo "Running taxonomy on masked unbinned contigs (comprehensive mode)" > {log}
+        cp {input.masked_unbinned} {output}/contigs_for_taxonomy.fasta
         
         # Convert contigs to mmseqs database format
         mmseqs createdb {output}/contigs_for_taxonomy.fasta {output}/queryDB 2>> {log}
@@ -44,7 +45,7 @@ rule mmseqs_taxonomy_all_contigs:
 
 rule mmseqs_taxonomy_prophage_only:
     input:
-        contigs = os.path.join(config["outdir"], "{sample}", "binning", "final_filtered_contigs.fasta"),
+        masked_unbinned = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "masked_contigs.fasta"),
         prophage_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv")
     params:
         db = config["mmseqs_database"]
@@ -60,14 +61,14 @@ rule mmseqs_taxonomy_prophage_only:
         """
         set -ue
         mkdir -p {output}
-        
-        echo "Running taxonomy on prophage-containing contigs only (targeted mode)" > {log}
-        
-        # Extract list of prophage-containing contigs
-        awk 'NR>1 {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {output}/prophage_contigs.txt
-        
-        # Extract only prophage-containing contigs from the full contig set
-        seqkit grep -r -f {output}/prophage_contigs.txt {input.contigs} > {output}/contigs_for_taxonomy.fasta 2>> {log}
+
+        echo "Running taxonomy on masked prophage-containing contigs only (targeted mode)" > {log}
+
+        # Extract list of unbinned prophage-containing contigs (bin == "none")
+        awk 'NR>1 && $5=="none" {{print "NODE_" $1 "_"}}' {input.prophage_table} | sort -u > {output}/prophage_contigs.txt
+
+        # Extract only unbinned prophage-containing contigs from masked contigs
+        seqkit grep -r -f {output}/prophage_contigs.txt {input.masked_unbinned} > {output}/contigs_for_taxonomy.fasta 2>> {log}
         
         # Check if any contigs were extracted
         if [ ! -s {output}/contigs_for_taxonomy.fasta ]; then
@@ -94,7 +95,8 @@ rule mmseqs_taxonomy_prophage_only:
 
 rule gtdbtk_classify_bins:
     input:
-        bins_done = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins")
+        bins_done = os.path.join(config["outdir"], "{sample}", "binning", "dastool", "{sample}.bins"),
+        mag_prophages = os.path.join(config["outdir"], "{sample}", "phage_analysis", "mags", "prophage_table.tsv")
     params:
         db = config["gtdbtk_database"]
     threads: 24
