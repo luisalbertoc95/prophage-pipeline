@@ -1,7 +1,8 @@
 
 # Prophage Pipeline
 
-<img width="930" height="580" alt="updated_workflow_072525 drawio" src="https://github.com/user-attachments/assets/4da9d036-4329-403c-a740-8934d393b127" />
+<img width="680" height="730" alt="prophage_101425 drawio" src="https://github.com/user-attachments/assets/4580cafc-cdc8-4768-bb4e-ecf5056c4b3a" />
+
 
 A Snakemake pipeline for comprehensive prophage detection and host taxonomy assignment from metagenomic data. The pipeline combines multiple prophage detection tools, performs binning-based host assignment, and integrates hybrid taxonomy (GTDB-Tk + MMseqs) for accurate host identification.
 
