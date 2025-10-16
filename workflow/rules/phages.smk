@@ -220,6 +220,27 @@ rule compare_genomad_approaches:
         cat {output.comparison_report}
         """
 
+# Combine prophage tables from all samples into a single multi-sample table
+rule combine_all_samples_prophage_tables:
+    input:
+        tables = expand(os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv"), sample=SAMPLES)
+    conda: config["conda_envs"]["phage_all"]
+    output:
+        combined_table = os.path.join(config["outdir"], "combined_prophage_table_all_samples.tsv")
+    log:
+        os.path.join(config["outdir"], "logs", "combine_all_samples_prophage_tables.log")
+    run:
+        import sys
+
+        # Build the command with sample:file pairs
+        sample_files = []
+        for sample in SAMPLES:
+            file_path = os.path.join(config["outdir"], sample, "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv")
+            sample_files.append(f"{sample}:{file_path}")
+
+        # Run the script
+        shell("python workflow/scripts/combine_prophage_tables.py {output.combined_table} " + " ".join(sample_files) + " 2> {log}")
+
 # Final rule to complete all phage analysis
 rule run_everything:
     input:
