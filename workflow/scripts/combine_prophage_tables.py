@@ -4,9 +4,8 @@ Combine prophage tables from multiple samples into a single table.
 Adds a 'sample' column to identify the source sample for each prophage.
 """
 
-import pandas as pd
 import sys
-from pathlib import Path
+import os
 
 
 def combine_prophage_tables(sample_files, output_file):
@@ -17,48 +16,59 @@ def combine_prophage_tables(sample_files, output_file):
         sample_files: List of tuples (sample_name, file_path)
         output_file: Path to output combined table
     """
-    combined_data = []
+    header_written = False
+    total_prophages = 0
+    samples_processed = 0
 
-    for sample_name, file_path in sample_files:
-        # Check if file exists
-        if not Path(file_path).exists():
-            print(f"Warning: File not found for sample {sample_name}: {file_path}", file=sys.stderr)
-            continue
-
-        # Read the prophage table
-        try:
-            df = pd.read_csv(file_path, sep='\t')
-
-            # Check if table is empty
-            if df.empty:
-                print(f"Warning: Empty table for sample {sample_name}", file=sys.stderr)
+    with open(output_file, 'w') as outfile:
+        for sample_name, file_path in sample_files:
+            # Check if file exists
+            if not os.path.exists(file_path):
+                print(f"Warning: File not found for sample {sample_name}: {file_path}", file=sys.stderr)
                 continue
 
-            # Add sample column as the first column
-            df.insert(0, 'sample', sample_name)
+            try:
+                with open(file_path, 'r') as infile:
+                    lines = infile.readlines()
 
-            combined_data.append(df)
-            print(f"Added {len(df)} prophages from sample {sample_name}", file=sys.stderr)
+                    if not lines:
+                        print(f"Warning: Empty file for sample {sample_name}", file=sys.stderr)
+                        continue
 
-        except Exception as e:
-            print(f"Error reading file for sample {sample_name}: {e}", file=sys.stderr)
-            continue
+                    # Process header
+                    if not header_written:
+                        # Add 'sample' column to header
+                        header = lines[0].strip()
+                        outfile.write(f"sample\t{header}\n")
+                        header_written = True
 
-    # Combine all dataframes
-    if combined_data:
-        combined_df = pd.concat(combined_data, ignore_index=True)
+                    # Process data lines
+                    sample_count = 0
+                    for line in lines[1:]:
+                        line = line.strip()
+                        if line:  # Skip empty lines
+                            outfile.write(f"{sample_name}\t{line}\n")
+                            sample_count += 1
+                            total_prophages += 1
 
-        # Write to output file
-        combined_df.to_csv(output_file, sep='\t', index=False)
+                    if sample_count > 0:
+                        samples_processed += 1
+                        print(f"Added {sample_count} prophages from sample {sample_name}", file=sys.stderr)
+                    else:
+                        print(f"Warning: No data rows in file for sample {sample_name}", file=sys.stderr)
+
+            except Exception as e:
+                print(f"Error reading file for sample {sample_name}: {e}", file=sys.stderr)
+                continue
+
+        # If no data was processed, write an empty file with header
+        if not header_written:
+            print("Warning: No data to combine, creating empty file with header", file=sys.stderr)
+            outfile.write("sample\tcontig\tstart\tend\ttool\tbin\tsource\tsuperkingdom\tphylum\tclass\torder\tfamily\tgenus\tspecies\ttaxonomy_source\n")
+
+    if samples_processed > 0:
         print(f"Combined table written to {output_file}", file=sys.stderr)
-        print(f"Total prophages: {len(combined_df)} from {len(combined_data)} samples", file=sys.stderr)
-    else:
-        print("Warning: No data to combine", file=sys.stderr)
-        # Create empty file with header
-        empty_df = pd.DataFrame(columns=['sample', 'contig', 'start', 'end', 'tool', 'bin', 'source',
-                                         'superkingdom', 'phylum', 'class', 'order', 'family',
-                                         'genus', 'species', 'taxonomy_source'])
-        empty_df.to_csv(output_file, sep='\t', index=False)
+        print(f"Total prophages: {total_prophages} from {samples_processed} samples", file=sys.stderr)
 
 
 if __name__ == "__main__":
