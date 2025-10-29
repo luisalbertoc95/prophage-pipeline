@@ -1,7 +1,7 @@
 
 # Prophage Pipeline
 
-<img width="680" height="730" alt="image" src="https://github.com/user-attachments/assets/a15446e6-be4a-4cec-a042-137b9a1c6a13" />
+![Prophage Pipeline Workflow](prophage_pipeline_workflow.svg)
 
 
 
