@@ -85,15 +85,16 @@ rule checkm:
     threads: 24
     conda: config["conda_envs"]["checkm"]
     output:
-        directory(os.path.join(config["outdir"], "{sample}", "binning", "checkm"))
+        outdir = directory(os.path.join(config["outdir"], "{sample}", "binning", "checkm")),
+        tsv = os.path.join(config["outdir"], "{sample}", "binning", "checkm", "checkm_out.tsv")
     log:
         os.path.join(config["outdir"], "logs", "checkm", "{sample}.log")
     benchmark:
         os.path.join(config["outdir"], "benchmarks", "checkm", "{sample}_bmrk.txt")
     shell:
         """
-        mkdir -p {output}
+        mkdir -p {output.outdir}
         checkm lineage_wf -x fa \
         {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/ \
-        {output}/ -t {threads} --tab_table -f {output}/checkm_out.tsv 2> {log}
+        {output.outdir}/ -t {threads} --tab_table -f {output.tsv} 2> {log}
         """ 
