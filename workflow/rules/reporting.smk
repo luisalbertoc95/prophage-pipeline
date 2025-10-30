@@ -18,7 +18,7 @@ rule generate_summary_report:
         checkm = expand(os.path.join(config["outdir"], "{sample}", "binning", "checkm", "checkm_out.tsv"), sample=SAMPLES),
 
         # Assembly data
-        assemblies = expand(os.path.join(config["outdir"], "{sample}", "assembly", "final.contigs.fa"), sample=SAMPLES)
+        assemblies = expand(os.path.join(config["outdir"], "{sample}", "assembly", "contigs.fasta"), sample=SAMPLES)
     params:
         samples = SAMPLES,
         outdir = config["outdir"]
