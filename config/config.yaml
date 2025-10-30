@@ -13,9 +13,6 @@ mmseqs_database: "/ref/sahlab/data/nr/nr_mmseqs15_DB"
 gtdbtk_database: "/ref/sahlab/data/gtdb_release226"
 checkv_database: "/ref/sahlab/data/viral_analysis_DBs/checkV_DB/checkv-db-v1.4"
 
-# Taxonomy method selection: "mmseqs" or "gtdbtk"  
-taxonomy_method: "mmseqs"
-
 # Taxonomy scope: "prophage_only" (faster, only contigs with prophages) or "all_contigs" (comprehensive)
 taxonomy_scope: "prophage_only"
 
