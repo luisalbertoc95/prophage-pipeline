@@ -26,10 +26,16 @@ rule binning_prep:
 
         samtools view -@ {threads} -Sb -o {output.bam} {output.sam} 2>> {log}
 
+        # Clean up SAM file immediately after conversion to save disk space
+        rm -f {output.sam}
+
         samtools sort -O bam -o {output.sorted_bam} {output.bam} 2>> {log}
 
+        # Clean up unsorted BAM file immediately after sorting to save disk space
+        rm -f {output.bam}
+
         samtools index {output.sorted_bam} 2>> {log}
-        
+
         # Clean up bowtie2 index files to save space
         rm -f {config[outdir]}/{wildcards.sample}/binning/map_reads/btdb.*
         """

@@ -26,21 +26,36 @@ rule mmseqs_taxonomy_all_contigs:
 
         echo "Running taxonomy on masked unbinned contigs (comprehensive mode)" > {log}
         cp {input.masked_unbinned} {output}/contigs_for_taxonomy.fasta
-        
-        # Convert contigs to mmseqs database format
-        mmseqs createdb {output}/contigs_for_taxonomy.fasta {output}/queryDB 2>> {log}
-        
-        # Run mmseqs taxonomy against NR database
-        mmseqs taxonomy {output}/queryDB {params.db} {output}/taxonomyResult {output}/tmp \
-        --search-type 3 --tax-lineage 1 \
-        --lca-ranks superkingdom,phylum,class,order,family,genus,species \
-        --threads {threads} 2>> {log}
-        
-        # Convert results to TSV format
-        mmseqs createtsv {output}/queryDB {output}/taxonomyResult {output}/contig.taxonomy 2>> {log}
-        
+
+        # Create temporary directory
+        TMP_DIR=$(mktemp -d)
+
+        # Run mmseqs easy-taxonomy (matches phage-analysis pipeline for better performance)
+        mmseqs easy-taxonomy {output}/contigs_for_taxonomy.fasta {params.db} \
+            {output}/contig {output}/tmp \
+            --min-length 30 \
+            -e 1e-15 \
+            --search-type 2 \
+            -s 4.0 \
+            --shuffle 0 \
+            --lca-mode 2 \
+            -a \
+            --tax-lineage 2 \
+            --threads {threads} \
+            --split-mode 0 \
+            --orf-filter 1 \
+            >> {log} 2>&1
+
+        # Rename output to match expected filename
+        if [ -f {output}/contig_lca.tsv ]; then
+            mv {output}/contig_lca.tsv {output}/contig.taxonomy
+        else
+            echo "Warning: mmseqs did not produce expected output" >> {log}
+            touch {output}/contig.taxonomy
+        fi
+
         # Clean up temporary files
-        rm -rf {output}/tmp {output}/queryDB* {output}/taxonomyResult*
+        rm -rf {output}/tmp $TMP_DIR
         """
 
 rule mmseqs_taxonomy_prophage_only:
@@ -76,21 +91,36 @@ rule mmseqs_taxonomy_prophage_only:
             touch {output}/contig.taxonomy
             exit 0
         fi
-        
-        # Convert contigs to mmseqs database format
-        mmseqs createdb {output}/contigs_for_taxonomy.fasta {output}/queryDB 2>> {log}
-        
-        # Run mmseqs taxonomy against NR database
-        mmseqs taxonomy {output}/queryDB {params.db} {output}/taxonomyResult {output}/tmp \
-        --search-type 3 --tax-lineage 1 \
-        --lca-ranks superkingdom,phylum,class,order,family,genus,species \
-        --threads {threads} 2>> {log}
-        
-        # Convert results to TSV format
-        mmseqs createtsv {output}/queryDB {output}/taxonomyResult {output}/contig.taxonomy 2>> {log}
-        
+
+        # Create temporary directory
+        TMP_DIR=$(mktemp -d)
+
+        # Run mmseqs easy-taxonomy (matches phage-analysis pipeline for better performance)
+        mmseqs easy-taxonomy {output}/contigs_for_taxonomy.fasta {params.db} \
+            {output}/contig {output}/tmp \
+            --min-length 30 \
+            -e 1e-15 \
+            --search-type 2 \
+            -s 4.0 \
+            --shuffle 0 \
+            --lca-mode 2 \
+            -a \
+            --tax-lineage 2 \
+            --threads {threads} \
+            --split-mode 0 \
+            --orf-filter 1 \
+            >> {log} 2>&1
+
+        # Rename output to match expected filename
+        if [ -f {output}/contig_lca.tsv ]; then
+            mv {output}/contig_lca.tsv {output}/contig.taxonomy
+        else
+            echo "Warning: mmseqs did not produce expected output" >> {log}
+            touch {output}/contig.taxonomy
+        fi
+
         # Clean up temporary files
-        rm -rf {output}/tmp {output}/queryDB* {output}/taxonomyResult*
+        rm -rf {output}/tmp $TMP_DIR
         """
 
 rule gtdbtk_classify_bins:
