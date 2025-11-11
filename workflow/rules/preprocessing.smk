@@ -48,6 +48,6 @@ rule host_removal:
         # Clean up intermediate files to save space
         rm -f {config[outdir]}/{wildcards.sample}/preprocessing/{wildcards.sample}_output.bam*
 
-        # Clean up trimmed FASTQ files after host removal (saves ~25G per sample)
+        # Clean up trimmed FASTQ files after host removal to save disk space
         rm -f {input.tr1} {input.tr2}
         """
