@@ -67,6 +67,8 @@ rule add_taxonomy_to_prophage_table:
         basic_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
         mmseqs_taxonomy = os.path.join(config["outdir"], "{sample}", "taxonomy", "mmseqs"),
         gtdbtk_taxonomy = os.path.join(config["outdir"], "{sample}", "taxonomy", "gtdbtk")
+    params:
+        taxonomizr_db = config["taxonomizr_database"]
     conda: config["conda_envs"]["phage_all"]
     output:
         table_with_taxonomy = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table_with_host_taxonomy.tsv")

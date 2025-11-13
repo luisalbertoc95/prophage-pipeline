@@ -1,5 +1,6 @@
 library(readr)
 library(tidyverse)
+library(taxonomizr)
 
 cat("=== HYBRID TAXONOMY INTEGRATION (GTDB-Tk + MMseqs) ===\n")
 
@@ -82,20 +83,81 @@ cat("\n3. Reading MMseqs taxonomy for unbinned contigs...\n")
 mmseqs_taxonomy <- empty_taxonomy
 
 mmseqs_path <- file.path(snakemake@input[["mmseqs_taxonomy"]], "contig.taxonomy")
+taxonomizr_db <- snakemake@params[["taxonomizr_db"]]
+
 if (file.exists(mmseqs_path)) {
-  mmseqs_taxonomy <- read_tsv(mmseqs_path, 
-                              col_names = c("contig_full", "taxid", "rank", "name", "retained", "assigned", "agreement", "confidence", "lineage", "lineage_names")) %>%
+  # Read MMseqs output (9 columns: contig, taxid, rank, name, 4 numeric values, lineage_ids)
+  mmseqs_raw <- read_tsv(mmseqs_path,
+                         col_names = c("contig_full", "taxid", "rank", "name", "v1", "v2", "v3", "v4", "lineage_ids"),
+                         show_col_types = FALSE) %>%
     # Extract contig number
     extract(contig_full, into = "contig", regex = "NODE_(\\d+)_", remove = FALSE) %>%
-    filter(!is.na(contig)) %>%
-    select(contig, lineage) %>%
-    separate_wider_delim(lineage, ";", 
-                         names = taxonomy_columns, 
-                         too_few = "align_start", too_many = "drop") %>%
-    mutate(taxonomy_source = "MMseqs") %>%
-    select(contig, all_of(taxonomy_columns), taxonomy_source)
-  
-  cat("MMseqs taxonomy loaded for", nrow(mmseqs_taxonomy), "contigs\n")
+    filter(!is.na(contig))
+
+  cat("MMseqs taxonomy loaded for", nrow(mmseqs_raw), "contigs\n")
+
+  # Convert lineage IDs to lineage names using taxonomizr
+  if (file.exists(taxonomizr_db)) {
+    cat("Converting taxonomy IDs to names using taxonomizr...\n")
+
+    # Split the lineage IDs and convert each to names
+    mmseqs_taxonomy <- mmseqs_raw %>%
+      rowwise() %>%
+      mutate(
+        # Split lineage IDs
+        taxid_list = list(as.numeric(strsplit(lineage_ids, ";")[[1]])),
+        # Get taxonomy for all IDs in the lineage
+        lineage_tax = list(tryCatch({
+          tax_info <- getTaxonomy(taxid_list, taxonomizr_db)
+          # getTaxonomy returns a matrix/dataframe with one row per taxid
+          # We want the most specific (last) entry for each rank
+          if (nrow(tax_info) > 0) {
+            # For each rank, get the last non-NA value
+            sapply(taxonomy_columns, function(rank) {
+              vals <- tax_info[, rank]
+              vals <- vals[!is.na(vals)]
+              if (length(vals) > 0) tail(vals, 1) else NA_character_
+            })
+          } else {
+            setNames(rep(NA_character_, length(taxonomy_columns)), taxonomy_columns)
+          }
+        }, error = function(e) {
+          setNames(rep(NA_character_, length(taxonomy_columns)), taxonomy_columns)
+        }))
+      ) %>%
+      ungroup() %>%
+      # Extract taxonomy columns
+      mutate(
+        superkingdom = sapply(lineage_tax, function(x) x["superkingdom"]),
+        phylum = sapply(lineage_tax, function(x) x["phylum"]),
+        class = sapply(lineage_tax, function(x) x["class"]),
+        order = sapply(lineage_tax, function(x) x["order"]),
+        family = sapply(lineage_tax, function(x) x["family"]),
+        genus = sapply(lineage_tax, function(x) x["genus"]),
+        species = sapply(lineage_tax, function(x) x["species"]),
+        taxonomy_source = "MMseqs"
+      ) %>%
+      select(contig, all_of(taxonomy_columns), taxonomy_source)
+
+    cat("Taxonomy ID conversion completed\n")
+  } else {
+    cat("Warning: Taxonomizr database not found at:", taxonomizr_db, "\n")
+    cat("Creating empty taxonomy for MMseqs results\n")
+    mmseqs_taxonomy <- mmseqs_raw %>%
+      mutate(
+        superkingdom = NA_character_,
+        phylum = NA_character_,
+        class = NA_character_,
+        order = NA_character_,
+        family = NA_character_,
+        genus = NA_character_,
+        species = NA_character_,
+        taxonomy_source = NA_character_
+      ) %>%
+      select(contig, all_of(taxonomy_columns), taxonomy_source)
+  }
+
+  cat("MMseqs taxonomy processed for", nrow(mmseqs_taxonomy), "contigs\n")
   
   # Show taxonomy summary
   mmseqs_summary <- mmseqs_taxonomy %>%
