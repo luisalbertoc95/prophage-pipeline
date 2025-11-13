@@ -103,41 +103,27 @@ if (file.exists(mmseqs_path)) {
   } else if (file.exists(taxonomizr_db)) {
     cat("Converting taxonomy IDs to names using taxonomizr...\n")
 
-    # Split the lineage IDs and convert each to names
+    # Use the final (most specific) taxonomy ID from the lineage
+    # getTaxonomy will return the full lineage for that ID
     mmseqs_taxonomy <- mmseqs_raw %>%
-      rowwise() %>%
       mutate(
-        # Split lineage IDs
-        taxid_list = list(as.numeric(strsplit(lineage_ids, ";")[[1]])),
-        # Get taxonomy for all IDs in the lineage
-        lineage_tax = list(tryCatch({
-          tax_info <- getTaxonomy(taxid_list, taxonomizr_db)
-          # getTaxonomy returns a matrix/dataframe with one row per taxid
-          # We want the most specific (last) entry for each rank
-          if (nrow(tax_info) > 0) {
-            # For each rank, get the last non-NA value
-            sapply(taxonomy_columns, function(rank) {
-              vals <- tax_info[, rank]
-              vals <- vals[!is.na(vals)]
-              if (length(vals) > 0) tail(vals, 1) else NA_character_
-            })
-          } else {
-            setNames(rep(NA_character_, length(taxonomy_columns)), taxonomy_columns)
-          }
-        }, error = function(e) {
-          setNames(rep(NA_character_, length(taxonomy_columns)), taxonomy_columns)
-        }))
-      ) %>%
-      ungroup() %>%
-      # Extract taxonomy columns
+        # Extract the last taxid from the lineage (most specific)
+        final_taxid = as.numeric(sapply(strsplit(lineage_ids, ";"), function(x) tail(x, 1)))
+      )
+
+    # Get taxonomy for all taxids at once (vectorized)
+    tax_info <- getTaxonomy(mmseqs_taxonomy$final_taxid, taxonomizr_db)
+
+    # Convert to data frame and bind to mmseqs_taxonomy
+    mmseqs_taxonomy <- mmseqs_taxonomy %>%
       mutate(
-        superkingdom = sapply(lineage_tax, function(x) x["superkingdom"]),
-        phylum = sapply(lineage_tax, function(x) x["phylum"]),
-        class = sapply(lineage_tax, function(x) x["class"]),
-        order = sapply(lineage_tax, function(x) x["order"]),
-        family = sapply(lineage_tax, function(x) x["family"]),
-        genus = sapply(lineage_tax, function(x) x["genus"]),
-        species = sapply(lineage_tax, function(x) x["species"]),
+        superkingdom = tax_info[, "superkingdom"],
+        phylum = tax_info[, "phylum"],
+        class = tax_info[, "class"],
+        order = tax_info[, "order"],
+        family = tax_info[, "family"],
+        genus = tax_info[, "genus"],
+        species = tax_info[, "species"],
         taxonomy_source = "MMseqs"
       ) %>%
       select(contig, all_of(taxonomy_columns), taxonomy_source)
