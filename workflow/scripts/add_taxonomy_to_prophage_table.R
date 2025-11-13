@@ -97,7 +97,10 @@ if (file.exists(mmseqs_path)) {
   cat("MMseqs taxonomy loaded for", nrow(mmseqs_raw), "contigs\n")
 
   # Convert lineage IDs to lineage names using taxonomizr
-  if (file.exists(taxonomizr_db)) {
+  if (nrow(mmseqs_raw) == 0) {
+    cat("No MMseqs taxonomy results to process\n")
+    mmseqs_taxonomy <- empty_taxonomy
+  } else if (file.exists(taxonomizr_db)) {
     cat("Converting taxonomy IDs to names using taxonomizr...\n")
 
     # Split the lineage IDs and convert each to names
