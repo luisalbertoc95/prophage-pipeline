@@ -1,0 +1,10 @@
+name: r_taxonomy
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=4.1
+  - r-tidyverse
+  - r-readr
+  - r-taxonomizr
