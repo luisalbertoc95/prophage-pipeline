@@ -1,0 +1,408 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="28.2.5">
+  <diagram name="Page-1" id="3_9651rIJdXSfUgyBS7o">
+    <mxGraphModel dx="2200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Background sections -->
+        <mxCell id="bg-all" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=0;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="-790" y="50" width="2150" height="950" as="geometry" />
+        </mxCell>
+
+        <!-- Preprocessing section (orange) -->
+        <mxCell id="bg-preprocessing" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="-790" y="50" width="210" height="400" as="geometry" />
+        </mxCell>
+
+        <!-- Assembly section (green) -->
+        <mxCell id="bg-assembly" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="-580" y="50" width="220" height="400" as="geometry" />
+        </mxCell>
+
+        <!-- Binning section (purple) -->
+        <mxCell id="bg-binning" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="-360" y="50" width="280" height="400" as="geometry" />
+        </mxCell>
+
+        <!-- MAG Analysis section (light blue) -->
+        <mxCell id="bg-mag-analysis" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="-80" y="50" width="420" height="550" as="geometry" />
+        </mxCell>
+
+        <!-- Unbinned Analysis section (light yellow) -->
+        <mxCell id="bg-unbinned-analysis" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="340" y="50" width="420" height="550" as="geometry" />
+        </mxCell>
+
+        <!-- Quality & Reporting section (light green) -->
+        <mxCell id="bg-quality" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="760" y="50" width="600" height="550" as="geometry" />
+        </mxCell>
+
+        <!-- Section Headers -->
+        <mxCell id="header-preprocessing" value="Preprocessing" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="-760" y="60" width="120" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="header-assembly" value="Assembly" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="-510" y="60" width="90" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="header-binning" value="Binning" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="-255" y="60" width="70" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="header-mag" value="MAG Analysis" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="70" y="60" width="120" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="header-unbinned" value="Unbinned Contig Analysis" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="450" y="60" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="header-quality" value="Quality Control &amp; Reporting" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="960" y="60" width="210" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- PREPROCESSING SECTION -->
+        <mxCell id="raw-reads" value="Raw reads" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="-730" y="105" width="90" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fastp" value="&lt;b&gt;Fastp&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-720" y="155" width="70" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="trimmed-reads" value="Trimmed reads" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="-730" y="225" width="90" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="minimap2" value="&lt;b&gt;Minimap2&lt;/b&gt;&lt;br&gt;(host removal)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-730" y="275" width="90" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hr-reads" value="Host-removed reads" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="-730" y="360" width="90" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ASSEMBLY SECTION -->
+        <mxCell id="megahit" value="&lt;b&gt;MEGAHIT&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-513" y="290" width="100" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="contigs" value="Contigs" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="-508" y="235" width="90" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="filter-1000" value="Filter &amp;gt;1000bp" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="-508" y="160" width="90" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="contigs-1000" value="Contigs &amp;gt;1000bp" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="-508" y="100" width="90" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- BINNING SECTION -->
+        <mxCell id="concoct" value="&lt;b&gt;CONCOCT&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-320" y="100" width="80" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="maxbin" value="&lt;b&gt;MaxBin2&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-320" y="155" width="80" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="metabat" value="&lt;b&gt;MetaBAT2&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-320" y="210" width="80" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dastool" value="&lt;b&gt;DAS Tool&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-180" y="160" width="80" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="bins" value="MAG Bins" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="-165" y="250" width="50" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="unbinned" value="Unbinned contigs &amp;gt;4000bp" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="-165" y="300" width="100" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- MAG ANALYSIS SECTION -->
+        <mxCell id="bakta" value="&lt;b&gt;Bakta&lt;/b&gt;&lt;br&gt;(annotation)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-40" y="130" width="80" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="phispy-mag" value="&lt;b&gt;PhiSpy&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="-40" y="200" width="80" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="genomad-mag" value="&lt;b&gt;geNomad&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="60" y="150" width="80" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="merge-mag" value="Merge prophage predictions" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="10" y="280" width="90" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mag-prophages" value="MAG prophages" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="5" y="370" width="100" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gtdbtk" value="&lt;b&gt;GTDB-Tk&lt;/b&gt;&lt;br&gt;taxonomy" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="170" y="150" width="80" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mag-taxonomy" value="MAG taxonomy" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="160" y="230" width="100" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- UNBINNED ANALYSIS SECTION -->
+        <mxCell id="genomad-unbinned" value="&lt;b&gt;geNomad&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="380" y="150" width="80" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="checkv-prophage-pred" value="&lt;b&gt;CheckV&lt;/b&gt;&lt;br&gt;(prophage pred)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="150" width="80" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="merge-unbinned" value="Merge prophage predictions" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="425" y="230" width="90" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="unbinned-prophages" value="Unbinned prophages" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="420" y="320" width="100" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="free-phages" value="Free phages" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="540" y="320" width="100" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mask-prophages" value="Mask prophage regions" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="580" y="150" width="90" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mmseqs" value="&lt;b&gt;MMseqs&lt;/b&gt;&lt;br&gt;taxonomy" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="590" y="230" width="80" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="unbinned-taxonomy" value="Unbinned taxonomy" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="580" y="380" width="100" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- QUALITY & REPORTING SECTION -->
+        <mxCell id="checkm" value="&lt;b&gt;CheckM&lt;/b&gt;&lt;br&gt;(MAG quality)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="800" y="130" width="90" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="checkv-mag" value="&lt;b&gt;CheckV&lt;/b&gt;&lt;br&gt;(MAG prophages)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="920" y="130" width="90" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="checkv-unbinned" value="&lt;b&gt;CheckV&lt;/b&gt;&lt;br&gt;(unbinned prophages + free phages)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="130" width="100" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="coverm" value="&lt;b&gt;CoverM&lt;/b&gt;&lt;br&gt;(all bins)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="130" width="90" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="combine-results" value="Combine all results" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="980" y="240" width="120" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="final-table" value="Final prophage table with taxonomy" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="960" y="320" width="160" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="summary-report" value="Multi-sample summary report" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;strokeWidth=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="960" y="390" width="160" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- EDGES/CONNECTIONS -->
+        <!-- Preprocessing flow -->
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="raw-reads" target="fastp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="fastp" target="trimmed-reads">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="trimmed-reads" target="minimap2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="minimap2" target="hr-reads">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Assembly flow -->
+        <mxCell id="edge5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="hr-reads" target="megahit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="megahit" target="contigs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="contigs" target="filter-1000">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="filter-1000" target="contigs-1000">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Binning flow -->
+        <mxCell id="edge9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="contigs-1000" target="concoct">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="contigs-1000" target="maxbin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="contigs-1000" target="metabat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.33;entryDx=0;entryDy=0;curved=1;entryPerimeter=0;" edge="1" parent="1" source="concoct" target="dastool">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="maxbin" target="dastool">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.67;entryDx=0;entryDy=0;curved=1;entryPerimeter=0;" edge="1" parent="1" source="metabat" target="dastool">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="dastool" target="bins">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="dastool" target="unbinned">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- MAG analysis flow -->
+        <mxCell id="edge17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="bins" target="bakta">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="bakta" target="phispy-mag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.33;entryDx=0;entryDy=0;curved=1;entryPerimeter=0;" edge="1" parent="1" source="bins" target="genomad-mag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="phispy-mag" target="merge-mag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="genomad-mag" target="merge-mag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="merge-mag" target="mag-prophages">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.67;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;exitPerimeter=0;" edge="1" parent="1" source="bins" target="gtdbtk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="gtdbtk" target="mag-taxonomy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Unbinned analysis flow -->
+        <mxCell id="edge25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="unbinned" target="genomad-unbinned">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="unbinned" target="checkv-prophage-pred">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="genomad-unbinned" target="merge-unbinned">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="checkv-prophage-pred" target="merge-unbinned">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="merge-unbinned" target="unbinned-prophages">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="genomad-unbinned" target="free-phages">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="unbinned" target="mask-prophages">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="mask-prophages" target="mmseqs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="mmseqs" target="unbinned-taxonomy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Quality & Reporting flow -->
+        <mxCell id="edge34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="bins" target="checkm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="265" />
+              <mxPoint x="700" y="160" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="mag-prophages" target="checkv-mag">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="385" />
+              <mxPoint x="700" y="160" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge36" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="unbinned-prophages" target="checkv-unbinned">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="335" />
+              <mxPoint x="730" y="163" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.67;entryDx=0;entryDy=0;curved=1;entryPerimeter=0;" edge="1" parent="1" source="free-phages" target="checkv-unbinned">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="335" />
+              <mxPoint x="730" y="172" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="hr-reads" target="coverm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-650" y="375" />
+              <mxPoint x="-650" y="480" />
+              <mxPoint x="1150" y="480" />
+              <mxPoint x="1150" y="160" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.1;entryY=0;entryDx=0;entryDy=0;curved=1;entryPerimeter=0;" edge="1" parent="1" source="checkm" target="combine-results">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;curved=1;entryPerimeter=0;" edge="1" parent="1" source="checkv-mag" target="combine-results">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;curved=1;entryPerimeter=0;" edge="1" parent="1" source="checkv-unbinned" target="combine-results">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.9;entryY=0;entryDx=0;entryDy=0;curved=1;entryPerimeter=0;" edge="1" parent="1" source="coverm" target="combine-results">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="mag-taxonomy" target="combine-results">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;curved=1;" edge="1" parent="1" source="unbinned-taxonomy" target="combine-results">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="740" y="395" />
+              <mxPoint x="740" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="combine-results" target="final-table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="final-table" target="summary-report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

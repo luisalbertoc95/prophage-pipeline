@@ -43,10 +43,10 @@ def detect_fastq_pattern(reads_dir):
 if config.get("fastq_names_1", "auto") == "auto":
     r1_pattern, r2_pattern, SAMPLES = detect_fastq_pattern(config["reads"])
     if not SAMPLES:
+        reads_dir = config['reads']
         raise ValueError(
-            f"Could not auto-detect FASTQ files in '{config['reads']}'. "
-            f"Tried patterns: {[p[0] for p in COMMON_PATTERNS]}. "
-            f"Set 'fastq_names_1' and 'fastq_names_2' in config to specify custom patterns."
+            "Could not auto-detect FASTQ files in '" + reads_dir + "'. "
+            "Set 'fastq_names_1' and 'fastq_names_2' in config to specify custom patterns."
         )
     config["fastq_names_1"] = r1_pattern
     config["fastq_names_2"] = r2_pattern
