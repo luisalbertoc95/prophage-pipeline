@@ -2,9 +2,56 @@ from snakemake.utils import min_version
 min_version("8.0")
 
 import os
+import glob
 
 configfile: "../config/config.yaml"
-SAMPLES, = glob_wildcards(os.path.join(config["reads"],config["fastq_names_1"]))
+
+# Common paired-end FASTQ naming patterns
+COMMON_PATTERNS = [
+    ("{sample}_1.fastq.gz", "{sample}_2.fastq.gz"),
+    ("{sample}_R1.fastq.gz", "{sample}_R2.fastq.gz"),
+    ("{sample}_R1_001.fastq.gz", "{sample}_R2_001.fastq.gz"),  # Illumina default
+    ("{sample}_1.fq.gz", "{sample}_2.fq.gz"),
+    ("{sample}_R1.fq.gz", "{sample}_R2.fq.gz"),
+    ("{sample}_R1_001.fq.gz", "{sample}_R2_001.fq.gz"),
+    ("{sample}_1.fastq", "{sample}_2.fastq"),
+    ("{sample}_R1.fastq", "{sample}_R2.fastq"),
+    ("{sample}_R1_001.fastq", "{sample}_R2_001.fastq"),
+    ("{sample}_1.fq", "{sample}_2.fq"),
+    ("{sample}_R1.fq", "{sample}_R2.fq"),
+    ("{sample}_R1_001.fq", "{sample}_R2_001.fq"),
+]
+
+def detect_fastq_pattern(reads_dir):
+    """
+    Auto-detect paired-end FASTQ naming pattern by probing for common suffixes.
+    Returns (r1_pattern, r2_pattern, samples) tuple.
+    """
+    for r1_pattern, r2_pattern in COMMON_PATTERNS:
+        # Convert pattern to glob: {sample} -> *
+        glob_pattern = os.path.join(reads_dir, r1_pattern.replace("{sample}", "*"))
+        matches = glob.glob(glob_pattern)
+        if matches:
+            # Found files - verify we can extract samples
+            samples, = glob_wildcards(os.path.join(reads_dir, r1_pattern))
+            if samples:
+                print(f"Auto-detected FASTQ pattern: {r1_pattern} / {r2_pattern}")
+                return r1_pattern, r2_pattern, samples
+    return None, None, []
+
+# Determine FASTQ patterns - auto-detect or use explicit config
+if config.get("fastq_names_1", "auto") == "auto":
+    r1_pattern, r2_pattern, SAMPLES = detect_fastq_pattern(config["reads"])
+    if not SAMPLES:
+        reads_dir = config['reads']
+        raise ValueError(
+            "Could not auto-detect FASTQ files in '" + reads_dir + "'. "
+            "Set 'fastq_names_1' and 'fastq_names_2' in config to specify custom patterns."
+        )
+    config["fastq_names_1"] = r1_pattern
+    config["fastq_names_2"] = r2_pattern
+else:
+    SAMPLES, = glob_wildcards(os.path.join(config["reads"], config["fastq_names_1"]))
 
 include: "rules/preprocessing.smk"
 include: "rules/assembly.smk"

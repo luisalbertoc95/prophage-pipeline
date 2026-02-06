@@ -1,8 +1,12 @@
 reads: "reads"
 outdir: "out"
 
-fastq_names_1: "{sample}_1.fastq.gz"
-fastq_names_2: "{sample}_2.fastq.gz"
+# FASTQ naming patterns - set to "auto" to auto-detect common patterns
+# (_1/_2, _R1/_R2, .fastq.gz/.fq.gz variants), or specify explicitly like:
+# fastq_names_1: "{sample}_R1_001.fastq.gz"
+# fastq_names_2: "{sample}_R2_001.fastq.gz"
+fastq_names_1: "auto"
+fastq_names_2: "auto"
 fastp_min_sequence_length: 120 
 
 human_ref: "/ref/sahlab/data/GRCh38.fna.gz"

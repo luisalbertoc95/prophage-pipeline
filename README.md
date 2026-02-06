@@ -25,12 +25,19 @@ snakemake --profile ../profile/slurm/ --config reads=/path/to/reads outdir=/path
 ## Configuration Options
 
 ### Required Parameters
-- `reads`: Directory containing paired-end FASTQ files (suffixes: `_1.fastq.gz`, `_2.fastq.gz`)
+- `reads`: Directory containing paired-end FASTQ files
 - `outdir`: Output directory for all results
 
-### Optional Parameters
-- `fastq_names_1`: R1 file pattern (default: `{sample}_1.fastq.gz`)
-- `fastq_names_2`: R2 file pattern (default: `{sample}_2.fastq.gz`)
+### Input File Detection
+The pipeline automatically detects common FASTQ naming patterns:
+- `{sample}_1.fastq.gz` / `{sample}_2.fastq.gz`
+- `{sample}_R1.fastq.gz` / `{sample}_R2.fastq.gz`
+- `{sample}_R1_001.fastq.gz` / `{sample}_R2_001.fastq.gz` (Illumina default)
+- Also supports `.fq.gz`, `.fastq`, and `.fq` extensions
+
+For non-standard naming, specify patterns explicitly:
+- `fastq_names_1`: R1 file pattern (e.g., `{sample}_R1_001.fastq.gz`)
+- `fastq_names_2`: R2 file pattern (e.g., `{sample}_R2_001.fastq.gz`)
 - `fastp_min_sequence_length`: Minimum read length after trimming (default: 120)
 - `taxonomy_scope`: Taxonomy analysis scope - `"prophage_only"` or `"all_contigs"` (default: `"prophage_only"`)
 
