@@ -44,3 +44,6 @@ genomad/
 *_IMPLEMENTATION.md
 *_CHECKLIST.md
 *_BRANCH.md
+
+# Test directories
+workflow/test_mmseqs_batch/
