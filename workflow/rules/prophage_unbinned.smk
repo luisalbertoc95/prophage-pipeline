@@ -186,7 +186,7 @@ rule extract_free_phages:
 
 rule mask_prophage_regions:
     input:
-        contigs = os.path.join(config["outdir"], "{sample}", "binning", "filt_4000_seqs_to_keep.fasta"),
+        contigs = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "unbinned_contigs.fasta"),
         prophage_bed = os.path.join(config["outdir"], "{sample}", "phage_analysis", "unbinned", "genomad_prophages.bed")
     conda: config["conda_envs"]["phage_all"]
     output:
@@ -202,9 +202,20 @@ rule mask_prophage_regions:
             n_regions=$(wc -l < {input.prophage_bed})
             echo "Masking $n_regions prophage regions" > {output.mask_stats}
 
-            # Convert BED to proper format for bedtools
-            # BED columns: contig start end, need to add NODE_ prefix
-            awk '{{print "NODE_" $1 "\t" $2 "\t" $3}}' {input.prophage_bed} > {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.bed
+            # Build lookup table: contig_number -> full_contig_name
+            # FASTA headers have sample prefix, e.g., SAMPLE_NODE_1215_length_95187_cov_12.9194
+            grep "^>" {input.contigs} | sed 's/>//' | awk -F'_NODE_' '{{
+                split($2, parts, "_")
+                contig_num = parts[1]
+                print contig_num "\t" $0
+            }}' > {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/contig_lookup.tsv
+
+            # Convert BED to proper format for bedtools using full contig names
+            # BED input columns: contig_num start end ...
+            # Output: full_contig_name start end
+            awk 'NR==FNR {{lookup[$1]=$2; next}} $1 in lookup {{print lookup[$1] "\t" $2 "\t" $3}}' \
+                {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/contig_lookup.tsv \
+                {input.prophage_bed} > {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.bed
 
             # Use bedtools maskfasta to mask regions with N's
             bedtools maskfasta -fi {input.contigs} -bed {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/mask_regions.bed -fo {output.masked_contigs} 2>> {log}
