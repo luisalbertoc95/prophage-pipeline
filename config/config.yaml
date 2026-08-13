@@ -1,6 +1,12 @@
 reads: "reads"
 outdir: "out"
 
+# PATCH (fork): when true, skip the built-in fastp/host_removal steps and start at
+# assembly on pre-staged {outdir}/{sample}/preprocessing/{sample}_{1,2}_hr.fastq.gz
+# (produced by the TransitionByProphageInduction 01_preprocess.sh). Default false =
+# unchanged upstream behaviour. Override on the CLI: --config external_preprocessing=true
+external_preprocessing: false
+
 # FASTQ naming patterns - set to "auto" to auto-detect common patterns
 # (_1/_2, _R1/_R2, .fastq.gz/.fq.gz variants), or specify explicitly like:
 # fastq_names_1: "{sample}_R1_001.fastq.gz"

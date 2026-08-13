@@ -39,8 +39,24 @@ def detect_fastq_pattern(reads_dir):
                 return r1_pattern, r2_pattern, samples
     return None, None, []
 
+# Determine samples.
+# PATCH (fork): in external_preprocessing mode the trimmed + host-removed reads were
+# produced upstream (01_preprocess.sh) and staged at
+# {outdir}/{sample}/preprocessing/{sample}_1_hr.fastq.gz. Discover samples from those
+# staged files and skip fastp/host_removal (see rules/preprocessing.smk); raw reads
+# are not required. Otherwise, keep the original auto-detect / explicit-pattern logic.
+if config.get("external_preprocessing", False):
+    _hr_files = glob.glob(os.path.join(config["outdir"], "*", "preprocessing", "*_1_hr.fastq.gz"))
+    SAMPLES = sorted({os.path.basename(f)[: -len("_1_hr.fastq.gz")] for f in _hr_files})
+    if not SAMPLES:
+        raise ValueError(
+            "external_preprocessing=True but no staged reads found under "
+            + os.path.join(config["outdir"], "<sample>", "preprocessing")
+            + " (expected {sample}_1_hr.fastq.gz) — run 01_preprocess.sh first."
+        )
+    print(f"external_preprocessing: discovered {len(SAMPLES)} samples from staged _hr reads")
 # Determine FASTQ patterns - auto-detect or use explicit config
-if config.get("fastq_names_1", "auto") == "auto":
+elif config.get("fastq_names_1", "auto") == "auto":
     r1_pattern, r2_pattern, SAMPLES = detect_fastq_pattern(config["reads"])
     if not SAMPLES:
         reads_dir = config['reads']
