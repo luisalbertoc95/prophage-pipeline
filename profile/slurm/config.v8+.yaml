@@ -41,10 +41,13 @@ set-resources:
         mem: 50G
     checkm:
         mem: 50G
-    mmseqs_taxonomy_all_contigs:
+    # NOTE (fork fix): the actual mmseqs taxonomy rule is `mmseqs_taxonomy_combined`
+    # (workflow/rules/taxonomy.smk). The two names below do not exist as rules, so the
+    # big-mem allocation never applied and the real rule ran with the 16G default and
+    # failed to load the nr DB. Allocate the memory to the correct rule name.
+    mmseqs_taxonomy_combined:
         mem: 700G
-    mmseqs_taxonomy_prophage_only:
-        mem: 700G
+        cpus_per_task: 8
     coverm_mapping:
         mem: 50G
     checkv:
