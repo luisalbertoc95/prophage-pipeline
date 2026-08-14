@@ -20,6 +20,12 @@ printshellcmds: True
 scheduler: greedy
 #restart-times: 1
 
+# Force {threads} for the mmseqs taxonomy rule so its shell `--threads {threads}`
+# actually uses the allocated CPUs (the nr prefilter over ~176M sequences is the
+# pipeline's slowest step; 2 threads makes it take hours).
+set-threads:
+    mmseqs_taxonomy_combined: 24
+
 set-resources:
     host_removal:
         mem: 50G
@@ -47,7 +53,7 @@ set-resources:
     # failed to load the nr DB. Allocate the memory to the correct rule name.
     mmseqs_taxonomy_combined:
         mem: 700G
-        cpus_per_task: 8
+        cpus_per_task: 24
     coverm_mapping:
         mem: 50G
     checkv:
