@@ -67,8 +67,8 @@ rule identify_unbinned_genomad:
     shell:
         """
         # Find GeNomad provirus predictions
-        provirus_tsv=$(find {input.genomad_dir} -name "*_provirus.tsv" | head -1)
-        provirus_fna=$(find {input.genomad_dir} -name "*_provirus.fna" | head -1)
+        provirus_tsv=$(find {input.genomad_dir} -name "*_provirus.tsv" | head -1 || true)
+        provirus_fna=$(find {input.genomad_dir} -name "*_provirus.fna" | head -1 || true)
 
         # Initialize output files
         touch {output.genomad_bed}
@@ -155,8 +155,8 @@ rule extract_free_phages:
     shell:
         """
         # Find genomad virus predictions (not proviruses)
-        virus_fna=$(find {input.genomad_dir} -name "*_virus.fna" | head -1)
-        virus_summary=$(find {input.genomad_dir} -name "*_virus_summary.tsv" | head -1)
+        virus_fna=$(find {input.genomad_dir} -name "*_virus.fna" | head -1 || true)
+        virus_summary=$(find {input.genomad_dir} -name "*_virus_summary.tsv" | head -1 || true)
 
         if [ -f "$virus_fna" ] && [ -s "$virus_fna" ]; then
             # Copy free phage sequences
@@ -269,8 +269,8 @@ rule extract_checkv_prophages_unbinned:
         touch {output.checkv_prophage_fasta}
 
         # Find CheckV provirus predictions
-        provirus_fna=$(find {input.checkv_dir} -name "proviruses.fna" 2>/dev/null | head -1)
-        provirus_tsv=$(find {input.checkv_dir} -name "proviruses.tsv" 2>/dev/null | head -1)
+        provirus_fna=$(find {input.checkv_dir} -name "proviruses.fna" 2>/dev/null | head -1 || true)
+        provirus_tsv=$(find {input.checkv_dir} -name "proviruses.tsv" 2>/dev/null | head -1 || true)
 
         if [ -f "$provirus_fna" ] && [ -s "$provirus_fna" ] && [ -f "$provirus_tsv" ] && [ -s "$provirus_tsv" ]; then
             # Copy CheckV prophage sequences

@@ -172,7 +172,7 @@ rule compare_genomad_approaches:
         fi
 
         # From unbinned
-        unbinned_tsv=$(find {input.per_mag_unbinned_genomad} -name "*_provirus.tsv" 2>/dev/null | head -1)
+        unbinned_tsv=$(find {input.per_mag_unbinned_genomad} -name "*_provirus.tsv" 2>/dev/null | head -1 || true)
         if [ -f "$unbinned_tsv" ] && [ -s "$unbinned_tsv" ]; then
             awk 'NR>1 {{
                 if (match($2, /NODE_([0-9]+)_/, arr)) {{
@@ -183,7 +183,7 @@ rule compare_genomad_approaches:
 
         # Collect original complete assembly approach prophages
         echo -e "contig\tstart\tend\tsource" > {output.original_all_prophages}
-        original_tsv=$(find {input.original_complete} -name "*_provirus.tsv" 2>/dev/null | head -1)
+        original_tsv=$(find {input.original_complete} -name "*_provirus.tsv" 2>/dev/null | head -1 || true)
         if [ -f "$original_tsv" ] && [ -s "$original_tsv" ]; then
             awk 'NR>1 {{
                 if (match($2, /NODE_([0-9]+)_/, arr)) {{

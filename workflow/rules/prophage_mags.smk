@@ -68,7 +68,7 @@ rule phispy_per_mag:
         os.path.join(config["outdir"], "benchmarks", "phispy_per_mag", "{sample}_bin.{bin_num}_bmrk.txt")
     shell:
         """
-        gbff_file=$(find {input.bakta_dir} -name "*.gbff" | head -1)
+        gbff_file=$(find {input.bakta_dir} -name "*.gbff" | head -1 || true)
         if [ -f "$gbff_file" ]; then
             PhiSpy.py "$gbff_file" -o {output} --output_choice 63 2> {log} || true
         else
@@ -127,8 +127,8 @@ rule collect_genomad_per_mag:
             bin_num=$(basename "$genomad_dir" | sed 's/bin\\.//;s/\\..*$//')
 
             # Find provirus predictions for this bin
-            provirus_tsv=$(find "$genomad_dir" -name "*_provirus.tsv" 2>/dev/null | head -1)
-            provirus_fna=$(find "$genomad_dir" -name "*_provirus.fna" 2>/dev/null | head -1)
+            provirus_tsv=$(find "$genomad_dir" -name "*_provirus.tsv" 2>/dev/null | head -1 || true)
+            provirus_fna=$(find "$genomad_dir" -name "*_provirus.fna" 2>/dev/null | head -1 || true)
 
             if [ -f "$provirus_tsv" ] && [ -s "$provirus_tsv" ]; then
                 # Extract prophage coordinates and add bin assignment
