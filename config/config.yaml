@@ -27,6 +27,13 @@ taxonomizr_database: "/ref/sahlab/data/accessionTaxa.sql"
 # Taxonomy scope: "prophage_only" (faster, only contigs with prophages) or "all_contigs" (comprehensive)
 taxonomy_scope: "prophage_only"
 
+# PATCH (fork): skip the mmseqs-vs-nr host-taxonomy step entirely. Default false = upstream
+# behaviour. When true, the mmseqs rules never run and host taxonomy for prophages comes from
+# GTDB-Tk only (binned prophages); unbinned prophages stay unclassified. mmseqs-vs-nr is a
+# ~9h/run step that resolves ~0 for viral prophage queries. Override on CLI:
+#   --config skip_mmseqs_taxonomy=true
+skip_mmseqs_taxonomy: false
+
 # Conda environments
 conda_envs:
   bakta: "../envs/bakta_env.yaml"

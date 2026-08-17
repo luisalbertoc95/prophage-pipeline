@@ -82,10 +82,13 @@ if (nrow(gtdbtk_data) > 0) {
 cat("\n3. Reading MMseqs taxonomy for unbinned contigs...\n")
 mmseqs_taxonomy <- empty_taxonomy
 
-mmseqs_path <- file.path(snakemake@input[["mmseqs_taxonomy"]], "contig.taxonomy")
+# PATCH (fork): mmseqs_taxonomy is an optional input (skip_mmseqs_taxonomy). When absent,
+# snakemake@input[["mmseqs_taxonomy"]] is NULL -> use GTDB-Tk only.
+mmseqs_input <- snakemake@input[["mmseqs_taxonomy"]]
+mmseqs_path <- if (length(mmseqs_input) == 1) file.path(mmseqs_input, "contig.taxonomy") else NA_character_
 taxonomizr_db <- snakemake@params[["taxonomizr_db"]]
 
-if (file.exists(mmseqs_path)) {
+if (!is.na(mmseqs_path) && file.exists(mmseqs_path)) {
   # Read MMseqs output (9 columns: contig, taxid, rank, name, 4 numeric values, lineage_ids)
   mmseqs_raw <- read_tsv(mmseqs_path,
                          col_names = c("contig_full", "taxid", "rank", "name", "v1", "v2", "v3", "v4", "lineage_ids"),

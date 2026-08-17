@@ -61,12 +61,25 @@ rule merge_prophage_tables:
         tail -n +2 {input.unbinned_table} >> {output.merged_table}
         """
 
+# PATCH (fork): make the mmseqs-vs-nr taxonomy input OPTIONAL. When config
+# skip_mmseqs_taxonomy is true, the mmseqs_taxonomy input is omitted, so nothing requests
+# {sample}/taxonomy/mmseqs and the mmseqs rules never run. Host taxonomy then comes from
+# GTDB-Tk only (binned prophages); unbinned prophages stay unclassified. Default false =
+# upstream behaviour unchanged. (mmseqs-vs-nr is a ~9h/run step that resolves ~0 for viral
+# prophage queries, so skipping it makes the pipeline practical.)
+def _add_taxonomy_inputs(wildcards):
+    d = {
+        "basic_table": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "final_prophage_table.tsv"),
+        "gtdbtk_taxonomy": os.path.join(config["outdir"], wildcards.sample, "taxonomy", "gtdbtk"),
+    }
+    if not config.get("skip_mmseqs_taxonomy", False):
+        d["mmseqs_taxonomy"] = os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
+    return d
+
 # Add taxonomy information to prophage table
 rule add_taxonomy_to_prophage_table:
     input:
-        basic_table = os.path.join(config["outdir"], "{sample}", "phage_analysis", "final_prophage_table.tsv"),
-        mmseqs_taxonomy = os.path.join(config["outdir"], "{sample}", "taxonomy", "mmseqs"),
-        gtdbtk_taxonomy = os.path.join(config["outdir"], "{sample}", "taxonomy", "gtdbtk")
+        unpack(_add_taxonomy_inputs)
     params:
         taxonomizr_db = config["taxonomizr_database"]
     conda: "../envs/r_taxonomy.yaml"
