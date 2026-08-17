@@ -5,7 +5,7 @@
 # {sample}_2_hr.fastq.gz) and staged them under {outdir}/{sample}/preprocessing/.
 # In that mode we DEFINE NO fastp/host_removal rules, so the DAG starts at megahit
 # (rules/assembly.smk) on the pre-staged _hr files. Default (false) = upstream behaviour.
-if not config.get("external_preprocessing", False):
+if not _cfg_bool("external_preprocessing"):
 
     # Trim adapters from raw reads
     rule fastp:

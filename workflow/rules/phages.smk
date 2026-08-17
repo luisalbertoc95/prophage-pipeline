@@ -72,7 +72,7 @@ def _add_taxonomy_inputs(wildcards):
         "basic_table": os.path.join(config["outdir"], wildcards.sample, "phage_analysis", "final_prophage_table.tsv"),
         "gtdbtk_taxonomy": os.path.join(config["outdir"], wildcards.sample, "taxonomy", "gtdbtk"),
     }
-    if not config.get("skip_mmseqs_taxonomy", False):
+    if not _cfg_bool("skip_mmseqs_taxonomy"):
         d["mmseqs_taxonomy"] = os.path.join(config["outdir"], wildcards.sample, "taxonomy", "mmseqs")
     return d
 

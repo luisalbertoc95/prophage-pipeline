@@ -6,6 +6,14 @@ import glob
 
 configfile: "../config/config.yaml"
 
+# PATCH (fork): robust bool from config. CLI --config key=false passes the STRING "false",
+# which is truthy in Python; parse it properly so on/off toggles behave as expected.
+def _cfg_bool(key, default=False):
+    v = config.get(key, default)
+    if isinstance(v, bool):
+        return v
+    return str(v).strip().lower() in ("true", "1", "yes", "on")
+
 # Common paired-end FASTQ naming patterns
 COMMON_PATTERNS = [
     ("{sample}_1.fastq.gz", "{sample}_2.fastq.gz"),
@@ -45,7 +53,7 @@ def detect_fastq_pattern(reads_dir):
 # {outdir}/{sample}/preprocessing/{sample}_1_hr.fastq.gz. Discover samples from those
 # staged files and skip fastp/host_removal (see rules/preprocessing.smk); raw reads
 # are not required. Otherwise, keep the original auto-detect / explicit-pattern logic.
-if config.get("external_preprocessing", False):
+if _cfg_bool("external_preprocessing"):
     _hr_files = glob.glob(os.path.join(config["outdir"], "*", "preprocessing", "*_1_hr.fastq.gz"))
     SAMPLES = sorted({os.path.basename(f)[: -len("_1_hr.fastq.gz")] for f in _hr_files})
     if not SAMPLES:
