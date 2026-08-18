@@ -15,8 +15,10 @@ cat("Unbinned prophages:", sum(final_prophage_table$bin == "none"), "of", nrow(f
 # Initialize taxonomy data structure
 taxonomy_columns <- c('superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species')
 empty_taxonomy <- data.frame(
-  contig = character(),
-  superkingdom = character(), phylum = character(), class = character(), 
+  contig = character(), bin = character(),   # PATCH (fork): include `bin` so the GTDB-Tk
+                                             # branch's select(bin, ...) works when GTDB-Tk
+                                             # classified nothing (gtdbtk_data empty).
+  superkingdom = character(), phylum = character(), class = character(),
   order = character(), family = character(), genus = character(), species = character(),
   taxonomy_source = character()
 )
