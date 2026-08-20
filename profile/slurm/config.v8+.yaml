@@ -25,6 +25,10 @@ scheduler: greedy
 # pipeline's slowest step; 2 threads makes it take hours).
 set-threads:
     mmseqs_taxonomy_combined: 24
+    # Cluster cap is 24 cpus/task — use them all. These two rules hardcode threads: 8
+    # in their .smk; force 24 so the allocation is fully used.
+    phispy_per_mag: 24
+    separate_unbinned: 24
 
 set-resources:
     host_removal:
