@@ -25,10 +25,12 @@ scheduler: greedy
 # pipeline's slowest step; 2 threads makes it take hours).
 set-threads:
     mmseqs_taxonomy_combined: 24
-    # Cluster cap is 24 cpus/task — use them all. These two rules hardcode threads: 8
-    # in their .smk; force 24 so the allocation is fully used.
-    phispy_per_mag: 24
-    separate_unbinned: 24
+    # Right-size to what the tool actually uses (better backfill under cluster contention):
+    # PhiSpy is largely single-threaded; separate_unbinned just splits files. The heavy,
+    # genuinely-parallel rules (megahit, binning, genomad, checkm, checkv, gtdbtk, coverm)
+    # keep 24 via their own `threads: 24` / the cores=24 default.
+    phispy_per_mag: 8
+    separate_unbinned: 4
 
 set-resources:
     host_removal:
