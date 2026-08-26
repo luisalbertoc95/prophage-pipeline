@@ -35,25 +35,52 @@ rule filter_unbinned:
         contigs_5000bp = os.path.join(config["outdir"], "{sample}", "binning", "final_filt_contigs_5000.fasta")
     shell:
         """
-        # Extract the unbinned sequences >=4000bp
-        cat {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/unbinned.fa \
-        | seqkit seq -m 4000 > {output.unbinned_4000bp}
+        BINNING={config[outdir]}/{wildcards.sample}/binning
+        BINS_DIR=$BINNING/dastool/{wildcards.sample}_DASTool_bins
+        UNB=$BINS_DIR/unbinned.fa
 
-        # Extract the IDs of the unbinned sequences <4000bp
-        cat {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/unbinned.fa \
-        | seqkit seq -n -M 3999 \
-        > {config[outdir]}/{wildcards.sample}/binning/filt_4000_seqs_to_discard.txt
+        # ROBUSTNESS (fork): DAS_Tool omits unbinned.fa for low-biomass samples (no bins
+        # written, or no contigs left unbinned), which crashes this rule under bash strict
+        # mode. Reconstruct it directly: unbinned = contigs_filt minus contigs already in a
+        # DAS_Tool bin. Yields all contigs when 0 bins, empty when all contigs binned.
+        if [ ! -f "$UNB" ]; then
+            mkdir -p "$BINS_DIR"
+            BINFA=$(ls "$BINS_DIR"/*.fa 2>/dev/null | grep -v '/unbinned.fa$' || true)
+            if [ -n "$BINFA" ]; then
+                grep -h '^>' $BINFA | sed 's/^>//; s/[[:space:]].*//' \
+                    > "$BINNING/binned_contig_ids.txt" || : > "$BINNING/binned_contig_ids.txt"
+                if [ -s "$BINNING/binned_contig_ids.txt" ]; then
+                    seqkit grep -v -f "$BINNING/binned_contig_ids.txt" {input.contigs_filt} > "$UNB" || : > "$UNB"
+                else
+                    cp {input.contigs_filt} "$UNB"
+                fi
+            else
+                cp {input.contigs_filt} "$UNB"
+            fi
+        fi
 
-        # From main contigs file, get all sequences except for those on this list
-        seqkit grep -v -f {config[outdir]}/{wildcards.sample}/binning/filt_4000_seqs_to_discard.txt \
-        {input.contigs_filt} -o {output.final_contigs}
+        # Extract the unbinned sequences >=4000bp (empty-safe)
+        seqkit seq -m 4000 "$UNB" > {output.unbinned_4000bp} || : > {output.unbinned_4000bp}
 
-        mv {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/unbinned.fa \
-        {config[outdir]}/{wildcards.sample}/binning/dastool
+        # Extract the IDs of the unbinned sequences <4000bp (empty-safe)
+        seqkit seq -n -M 3999 "$UNB" > "$BINNING/filt_4000_seqs_to_discard.txt" \
+            || : > "$BINNING/filt_4000_seqs_to_discard.txt"
 
-        # Filter contigs for phispy input (5000bp filter)
-        cat {output.final_contigs} | seqkit seq -m 5000 > {output.contigs_5000bp}
-        """  
+        # From main contigs file, get all sequences except for those on this list.
+        # Empty discard list => nothing to remove => keep all contigs.
+        if [ -s "$BINNING/filt_4000_seqs_to_discard.txt" ]; then
+            seqkit grep -v -f "$BINNING/filt_4000_seqs_to_discard.txt" \
+            {input.contigs_filt} -o {output.final_contigs}
+        else
+            cp {input.contigs_filt} {output.final_contigs}
+        fi
+
+        # Relocate unbinned.fa out of the bins dir (best-effort; already ensured above)
+        mv "$UNB" $BINNING/dastool/ 2>/dev/null || true
+
+        # Filter contigs for phispy input (5000bp filter, empty-safe)
+        seqkit seq -m 5000 {output.final_contigs} > {output.contigs_5000bp} || : > {output.contigs_5000bp}
+        """
 
 rule separate_unbinned:
     input: 
@@ -75,7 +102,8 @@ rule separate_unbinned:
             close(filename)
         }}'
 
-        mv {wildcards.sample}_NODE* dastool/{wildcards.sample}_DASTool_bins
+        # Empty keep set (low-biomass sample) => no NODE files to move; don't fail.
+        mv {wildcards.sample}_NODE* dastool/{wildcards.sample}_DASTool_bins 2>/dev/null || true
         cd ../../../..
         """
 

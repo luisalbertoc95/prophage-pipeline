@@ -129,12 +129,20 @@ rule checkv_all_prophages:
         os.path.join(config["outdir"], "benchmarks", "checkv_all_prophages", "{sample}_bmrk.txt")
     shell:
         """
-        # Run checkv on all prophages
-        checkv end_to_end \
-        {input.all_prophages} \
-        {output.outdir} \
-        -t {threads} \
-        -d {input.db} 2> {log}
+        # ROBUSTNESS (fork): checkv aborts on an empty FASTA ("input file is empty").
+        # Low-biomass samples can yield zero prophages, so guard and emit a header-only
+        # quality_summary.tsv (0 prophages) instead of crashing the cohort report.
+        mkdir -p {output.outdir}
+        if grep -q '^>' {input.all_prophages} 2>/dev/null; then
+            checkv end_to_end \
+            {input.all_prophages} \
+            {output.outdir} \
+            -t {threads} \
+            -d {input.db} 2> {log}
+        else
+            printf 'contig_id\\tcontig_length\\tprovirus\\tproviral_length\\tgene_count\\tviral_genes\\thost_genes\\tcheckv_quality\\tmiuvig_quality\\tcompleteness\\tcompleteness_method\\tcontamination\\tkmer_freq\\twarnings\\n' > {output.quality_summary}
+            echo "Input FASTA has no sequences; wrote header-only quality_summary.tsv" > {log}
+        fi
         """
 
 # CheckV quality assessment for free phages only
@@ -153,12 +161,18 @@ rule checkv_free_phages:
         os.path.join(config["outdir"], "benchmarks", "checkv_free_phages", "{sample}_bmrk.txt")
     shell:
         """
-        # Run checkv on free phages
-        checkv end_to_end \
-        {input.free_phages} \
-        {output.outdir} \
-        -t {threads} \
-        -d {input.db} 2> {log}
+        # ROBUSTNESS (fork): guard empty FASTA (see checkv_all_prophages) -> header-only summary.
+        mkdir -p {output.outdir}
+        if grep -q '^>' {input.free_phages} 2>/dev/null; then
+            checkv end_to_end \
+            {input.free_phages} \
+            {output.outdir} \
+            -t {threads} \
+            -d {input.db} 2> {log}
+        else
+            printf 'contig_id\\tcontig_length\\tprovirus\\tproviral_length\\tgene_count\\tviral_genes\\thost_genes\\tcheckv_quality\\tmiuvig_quality\\tcompleteness\\tcompleteness_method\\tcontamination\\tkmer_freq\\twarnings\\n' > {output.quality_summary}
+            echo "Input FASTA has no sequences; wrote header-only quality_summary.tsv" > {log}
+        fi
         """
 
 # Optional comparison rule: Compare per-MAG vs complete assembly GeNomad approaches

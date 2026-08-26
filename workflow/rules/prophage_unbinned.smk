@@ -309,10 +309,17 @@ rule checkv_unbinned:
         # Combine prophages and free phages for checkv
         cat {input.prophages} {input.free_phages} > {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/all_phages_for_checkv.fasta
 
-        # Run checkv
-        checkv end_to_end \
-        {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/all_phages_for_checkv.fasta \
-        {output} \
-        -t {threads} \
-        -d {input.db} 2> {log}
+        # ROBUSTNESS (fork): guard empty FASTA (low-biomass samples) -> header-only summary
+        # instead of crashing checkv ("input file is empty").
+        mkdir -p {output}
+        if grep -q '^>' {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/all_phages_for_checkv.fasta 2>/dev/null; then
+            checkv end_to_end \
+            {config[outdir]}/{wildcards.sample}/phage_analysis/unbinned/all_phages_for_checkv.fasta \
+            {output} \
+            -t {threads} \
+            -d {input.db} 2> {log}
+        else
+            printf 'contig_id\\tcontig_length\\tprovirus\\tproviral_length\\tgene_count\\tviral_genes\\thost_genes\\tcheckv_quality\\tmiuvig_quality\\tcompleteness\\tcompleteness_method\\tcontamination\\tkmer_freq\\twarnings\\n' > {output}/quality_summary.tsv
+            echo "Input FASTA has no sequences; wrote header-only quality_summary.tsv" > {log}
+        fi
         """
