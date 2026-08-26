@@ -51,8 +51,15 @@ rule genomad_unbinned:
     shell:
         """
         mkdir -p {output}
-        genomad end-to-end --cleanup --threads {threads} \
-        {input.unbinned_contigs} {output} {input.db} 2> {log}
+        # ROBUSTNESS (fork): genomad aborts on an empty/degenerate FASTA. When a sample has
+        # no unbinned contigs to scan, leave the output dir empty -> identify_unbinned_genomad
+        # (find|| true + touch) yields 0 unbinned prophages instead of crashing.
+        if grep -q '^>' {input.unbinned_contigs} 2>/dev/null; then
+            genomad end-to-end --cleanup --threads {threads} \
+            {input.unbinned_contigs} {output} {input.db} 2> {log}
+        else
+            echo "No unbinned contigs; skipping genomad (0 unbinned prophages)" > {log}
+        fi
         """
 
 rule identify_unbinned_genomad:

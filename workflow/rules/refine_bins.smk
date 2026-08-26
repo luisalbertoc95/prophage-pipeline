@@ -122,7 +122,15 @@ rule checkm:
     shell:
         """
         mkdir -p {output.outdir}
-        checkm lineage_wf -x fa \
-        {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/ \
-        {output.outdir}/ -t {threads} --tab_table -f {output.tsv} 2> {log}
-        """ 
+        BINS_DIR={config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins
+        # ROBUSTNESS (fork): checkm errors when there are no bins (0-MAG low-biomass
+        # samples). Emit a header-only checkm_out.tsv so the sample completes with no MAGs.
+        if ls "$BINS_DIR"/*.fa >/dev/null 2>&1; then
+            checkm lineage_wf -x fa \
+            "$BINS_DIR"/ \
+            {output.outdir}/ -t {threads} --tab_table -f {output.tsv} 2> {log}
+        else
+            printf 'Bin Id\\tMarker lineage\\t# genomes\\t# markers\\t# marker sets\\t0\\t1\\t2\\t3\\t4\\t5+\\tCompleteness\\tContamination\\tStrain heterogeneity\\n' > {output.tsv}
+            echo "No DAS_Tool bins; wrote header-only checkm_out.tsv" > {log}
+        fi
+        """
