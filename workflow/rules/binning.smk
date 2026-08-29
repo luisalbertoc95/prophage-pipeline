@@ -75,9 +75,8 @@ rule concoct:
 
 rule maxbin:
     input:
-        hr1 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_1_hr.fastq.gz"),
-        hr2 = os.path.join(config["outdir"], "{sample}", "preprocessing", "{sample}_2_hr.fastq.gz"),
-        contigs_filt = os.path.join(config["outdir"], "{sample}", "assembly", "contigs_filt_1000bp.fasta")
+        contigs_filt = os.path.join(config["outdir"], "{sample}", "assembly", "contigs_filt_1000bp.fasta"),
+        depth = os.path.join(config["outdir"], "{sample}", "binning", "depth.txt")
     threads: 24
     conda: config["conda_envs"]["maxbin"]
     output:
@@ -88,13 +87,21 @@ rule maxbin:
         os.path.join(config["outdir"], "benchmarks", "maxbin", "{sample}_bmrk.txt")
     shell:
         """
-        
+        # Feed MaxBin the precomputed metabat depth (contig<TAB>avgDepth) via -abund instead of
+        # -reads. With -reads, MaxBin runs its own Bowtie2, which fails on this env's misconfigured
+        # 'setting' file ("Cannot run Bowtie2 ..."); -abund reuses the coverage already computed
+        # from the same sorted BAM (no re-mapping, no Bowtie2).
+        abund={config[outdir]}/{wildcards.sample}/binning/maxbin.abund
+        tail -n +2 {input.depth} | cut -f1,3 > "$abund"
+
         run_MaxBin.pl -thread {threads} -contig {input.contigs_filt} \
-        -reads {input.hr1} -reads2 {input.hr2} \
+        -abund "$abund" \
         -out {config[outdir]}/{wildcards.sample}/binning/maxbin.output 2> {log} || true
 
         mkdir -p {output}
-        mv {config[outdir]}/{wildcards.sample}/binning/maxbin.output* {output}
+        # Guard: MaxBin can legitimately produce no bins on low-complexity samples; an empty
+        # maxbin.out must not fail the rule (DAS_Tool still consolidates metabat + concoct).
+        mv {config[outdir]}/{wildcards.sample}/binning/maxbin.output* {output} 2>/dev/null || true
         """
 
 rule metabat:

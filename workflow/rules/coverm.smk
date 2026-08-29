@@ -6,12 +6,12 @@ rule rename_contigs:
     shell:
         """
         mkdir -p {output}
-        files={config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/*
-
-        for file in $files
+        # nullglob: DAS_Tool may produce no bins on low-biomass samples; an empty glob must not
+        # fail the rule (the sample then proceeds to unbinned-only prophage calling).
+        shopt -s nullglob
+        for file in {config[outdir]}/{wildcards.sample}/binning/dastool/{wildcards.sample}_DASTool_bins/*
         do
-        echo $file
-        cp $file {output}/{wildcards.sample}_$(basename $file)
+        cp "$file" {output}/{wildcards.sample}_$(basename "$file")
         done
         """
 
@@ -23,12 +23,15 @@ rule move_files:
     shell:
         """
         mkdir -p {output}
-
+        # nullglob: some samples' all_bins/<sample> dir is empty (no DAS_Tool bins); an empty
+        # glob must not fail this cross-sample rule.
+        shopt -s nullglob
         for dir in {input}
         do
-        if [ -d "$dir" ]; then
-        mv "$dir"/* {output}
-        fi
+        for f in "$dir"/*
+        do
+        mv "$f" {output}
+        done
         done
         """
 
